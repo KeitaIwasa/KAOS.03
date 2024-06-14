@@ -160,16 +160,17 @@ class AutomationHandler:
            
     def generate_form(self, delivery_date_int, today_str_csv, yesterday_str, today_str, night_order) :  
         script_service = build('script', 'v1', credentials=creds)
-        drive_service = build('drive', 'v3', credentials=creds)
-
-        file_metadata = {
-            'name': os.path.basename(f'{today_str_csv}_発注.CSV'),
-            'parents': ['1H7Izz-u465KTKz6JpxVVsraO97y3jpW5']
-        }
-        media = MediaFileUpload(f'{download_folder_path()}/{today_str_csv}_発注.CSV', mimetype='application/octet-stream')
-        file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-        csv_id = file.get("id")
-        print(f'File ID: {csv_id}')
+        
+        if night_order:
+            drive_service = build('drive', 'v3', credentials=creds)
+            file_metadata = {
+                'name': os.path.basename(f'{today_str_csv}_発注.CSV'),
+                'parents': ['1H7Izz-u465KTKz6JpxVVsraO97y3jpW5']
+            }
+            media = MediaFileUpload(f'{download_folder_path()}/{today_str_csv}_発注.CSV', mimetype='application/octet-stream')
+            file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+            csv_id = file.get("id")
+            print(f'File ID: {csv_id}')
         script_id = 'AKfycbxK7pavgq0YZ-chJgYh_49eYCs0C6Gsm9RHBwpGIHFa4URkRXYivT8SeUVlt6nI-8Vbfg'
         request = {
             'function': 'generateForm',
