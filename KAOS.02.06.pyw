@@ -400,8 +400,8 @@ class Page_4(Progress_Page): #発注書作成
             qr = qrcode.QRCode(
                 version=1,
                 error_correction=qrcode.constants.ERROR_CORRECT_L,
-                box_size=10,
-                border=4,
+                box_size=3.5,
+                border=3,
             )
             qr.add_data(parent.spread_url)
             qr.make(fit=True)
@@ -442,7 +442,8 @@ class Page_6(Text_and_Button_Page): #発注書生成完了&入力確認
     def __init__(self, parent):
         super().__init__(parent)
         parent.attributes("-topmost", False)
-        self.label1.config(text="発注書が作成されました。タブレットで本日の発注書に現在庫数を入力してください。") 
+        self.label1.config(text="発注書が作成されました。タブレットでQRコードを読み込み、現在庫数を入力してください。") 
+        self.label1.pack(pady=(50,10))
         self.button1.pack_forget()
         label_qr = tk.Label(self, image=parent.qr_img)
         label_qr.pack()
@@ -520,7 +521,7 @@ class Page_8(List_Page):
         else:
             todo_list.append('EOSで「発注手続きへ」をクリックして、発注確定・印刷する。')
 
-        if st.SHOP_NAME in {"自由が丘メープル通り", "岩佐Surface"}:
+        if st['SHOP_NAME'] in {"自由が丘メープル通り", "岩佐Surface"}:
             todo_list.append('たまごを忘れず発注する。')
         todo_list.append('発注が終了したら、右上の✕ボタンで終了してください。')
 
@@ -530,7 +531,7 @@ class Page_8(List_Page):
 
         if parent.today_int.weekday() in {1, 3, 5}: #本日が火・木・土の場合
             try:
-                print_seccess = parent.handler.print_excel(parent.today_order_file, '非食品', st.PRINTER_NAME)
+                print_seccess = parent.handler.print_excel(parent.today_order_file, '非食品', st['PRINTER_NAME'])
                 if print_seccess is False:
                     raise Exception
             except:

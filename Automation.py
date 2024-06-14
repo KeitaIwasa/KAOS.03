@@ -171,6 +171,8 @@ class AutomationHandler:
             file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
             csv_id = file.get("id")
             print(f'File ID: {csv_id}')
+        else:
+            csv_id = None
         script_id = 'AKfycbxK7pavgq0YZ-chJgYh_49eYCs0C6Gsm9RHBwpGIHFa4URkRXYivT8SeUVlt6nI-8Vbfg'
         request = {
             'function': 'generateForm',
@@ -189,10 +191,10 @@ class AutomationHandler:
             debug_info = json.loads(debug_info_json)
             print('Debug Info:', debug_info)
 
-            new_spreadsheet_id = debug_info.get('spreadsheetId')
-            print('New Spreadsheet ID: {}'.format(new_spreadsheet_id))
+            self.new_spreadsheet_id = debug_info.get('spreadsheetId')
+            print('New Spreadsheet ID: {}'.format(self.new_spreadsheet_id))
 
-            spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{new_spreadsheet_id}/edit" 
+            spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{self.new_spreadsheet_id}/edit" 
             
             return spreadsheet_url
         #except Exception as e:
@@ -200,46 +202,12 @@ class AutomationHandler:
         #    return False
 
     def get_spreadsheet(self, today_str):
-        today_order_file = f'発注書_{today_str}.xlsx'
-        drive_service = build('drive', 'v3', credentials=creds)
         sheets_service = build('sheets', 'v4', credentials=creds)
-        time.sleep(6) #spreadsheetがタブレットからドライブに同期されるのを待つため
-        response = drive_service.files().list(q=f"'{st.FOLDER_ID}' in parents and trashed=false").execute()
-        files = response.get('files', [])
-        excel_files = [file for file in files if file['name'] == today_order_file and file['mimeType'] == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
-        excel_file_id = excel_files[0]['id']
-        print(f"Found spreadsheet: {today_order_file} with ID: {excel_file_id}")
-        # ExcelファイルをGoogleスプレッドシートに変換(リトライロジック組み込み済み)
-        max_retries = 5
-        initial_wait_time = 1  # 初期の待機時間（秒）
-        max_wait_time = 64  # 最大の待機時間（秒）
-        for retry_count in range(max_retries):
-            try:
-                copied_file = {
-                    'name': today_order_file.replace('.xlsx', ''),
-                    'mimeType': 'application/vnd.google-apps.spreadsheet'
-                }
-                converted_file = drive_service.files().copy(fileId=excel_file_id, body=copied_file).execute()
-                spreadsheet_id = converted_file['id']
-                print(f"Converted to Google Spreadsheet with ID: {spreadsheet_id}")
-                break  # 成功した場合はループを抜ける
-            except HttpError as error:
-                if error.resp.status in [403, 429] and 'userRateLimitExceeded' in error.content.decode():
-                    wait_time = min(initial_wait_time * (2 ** retry_count) + random.randint(0, 1000) / 1000, max_wait_time)
-                    print(f"Rate limit exceeded. Retrying in {wait_time} seconds...")
-                    time.sleep(wait_time)
-                else:
-                    raise
-        else:
-            raise Exception("Max retries exceeded")
-        
-        try:
-            # シートのデータを取得
-            sheet = sheets_service.spreadsheets()
-            result = sheet.values().get(spreadsheetId=spreadsheet_id, range='食品').execute()
-            values = result.get('values', [])
-        finally:
-            drive_service.files().update(fileId=spreadsheet_id, body={'trashed': True}).execute()
+        time.sleep(6) #spreadsheetがタブレットからドライブに同期されるのを待つため        
+        # シートのデータを取得
+        sheet = sheets_service.spreadsheets()
+        result = sheet.values().get(spreadsheetId=self.new_spreadsheet_id, range='食品').execute()
+        values = result.get('values', [])
         # 指定した複数の列をDataFrameに変換
         if not values:
             print('No data found in the sheet.')
