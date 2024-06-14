@@ -1,0 +1,12 @@
+error_log*.txt
+__pycache__
+*.CSV
+*.xlsx
+token*
+client_*
+client_secret.json
+*test*
+desktop.ini
+.tmp.driveupload
+*settings*
+*.ini
