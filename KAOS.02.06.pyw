@@ -547,14 +547,18 @@ def hide_files():
     exclude_files = [os.path.basename(__file__)] + [f for f in os.listdir(directory) if f.endswith('.xlsx') or f.endswith('.xls')]
     exclude_dirs = ['発注書Excel']
 
+    # 隠すべきファイルとディレクトリのリストを作成
+    items_to_hide = []
     for item in os.listdir(directory):
         item_path = os.path.join(directory, item)
-        # ファイルが除外リストにない場合
         if os.path.isfile(item_path) and item not in exclude_files:
-            os.system(f'attrib +h "{item_path}"')
-        # ディレクトリが除外リストにない場合
+            items_to_hide.append(f'"{item_path}"')
         elif os.path.isdir(item_path) and item not in exclude_dirs:
-            os.system(f'attrib +h "{item_path}"')
+            items_to_hide.append(f'"{item_path}"')
+
+    # コマンドを一度に実行
+    if items_to_hide:
+        os.system(f'attrib +h {" ".join(items_to_hide)}')
 
 if __name__ == "__main__":
     try:
