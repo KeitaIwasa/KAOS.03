@@ -69,7 +69,7 @@ class AutomationHandler:
             with open(token_path, 'w') as token:
                 token.write(creds.to_json())
         self.driver = None
-
+        
     def register_drive_id(self, shopName):
         drive_service = build('drive', 'v3', credentials=creds)
         parent_folder = '1H7Izz-u465KTKz6JpxVVsraO97y3jpW5'
@@ -77,7 +77,6 @@ class AutomationHandler:
         query = f"mimeType='application/vnd.google-apps.folder' and name='{new_folder_name}' and '{parent_folder}' in parents and trashed=false"
         results = drive_service.files().list(q=query, spaces='drive', fields='files(id, name)').execute()
         items = results.get('files', [])
-        print(items)
         if len(items)==0:
             file_metadata = {
                 'name': shopName,
@@ -89,7 +88,7 @@ class AutomationHandler:
             print('Folder created with ID:', new_folder_id)
             return new_folder_id
         else:
-            return None
+            return items[0]['id']
         
     # EOSログインメソッド
     def login_eos(self, user_id, password):
@@ -180,24 +179,22 @@ class AutomationHandler:
         raise Exception("All retry attempts failed")
            
     def generate_form(self, delivery_date_int, today_str_csv, yesterday_str, today_str, night_order) :  
-        script_service = build('script', 'v1', credentials=creds)
-        
         if night_order:
             drive_service = build('drive', 'v3', credentials=creds)
             file_metadata = {
                 'name': os.path.basename(f'{today_str_csv}_発注.CSV'),
-                'parents': ['1H7Izz-u465KTKz6JpxVVsraO97y3jpW5']
+                'parents': [st['SHOP_FOLDER_ID']]
             }
             media = MediaFileUpload(f'{download_folder_path()}/{today_str_csv}_発注.CSV', mimetype='application/octet-stream')
             file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
             csv_id = file.get("id")
             print(f'File ID: {csv_id}')
-        else:
-            csv_id = None
+
+        script_service = build('script', 'v1', credentials=creds)
         script_id = 'AKfycbxK7pavgq0YZ-chJgYh_49eYCs0C6Gsm9RHBwpGIHFa4URkRXYivT8SeUVlt6nI-8Vbfg'
         request = {
             'function': 'generateForm',
-            'parameters': [delivery_date_int.isoformat(), csv_id, yesterday_str, today_str, night_order, st['SHOP_NAME']]
+            'parameters': [delivery_date_int.isoformat(), csv_id, yesterday_str, today_str, night_order, st['SHOP_FOLDER_ID']]
         }
         print(delivery_date_int.isoformat())
         #try:
@@ -212,10 +209,10 @@ class AutomationHandler:
             debug_info = json.loads(debug_info_json)
             print('Debug Info:', debug_info)
 
-            self.new_spreadsheet_id = debug_info.get('spreadsheetId')
-            print('New Spreadsheet ID: {}'.format(self.new_spreadsheet_id))
+            new_spreadsheet_id = debug_info.get('spreadsheetId')
+            print('New Spreadsheet ID: {}'.format(new_spreadsheet_id))
 
-            spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{self.new_spreadsheet_id}/edit" 
+            spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{new_spreadsheet_id}/edit" 
             
             return spreadsheet_url
         #except Exception as e:
@@ -223,20 +220,56 @@ class AutomationHandler:
         #    return False
 
     def get_spreadsheet(self, today_str):
+        today_order_file = f'発注書_{today_str}.xlsx'
+        drive_service = build('drive', 'v3', credentials=creds)
         sheets_service = build('sheets', 'v4', credentials=creds)
-        time.sleep(6) #spreadsheetがタブレットからドライブに同期されるのを待つため        
-        # シートのデータを取得
-        sheet = sheets_service.spreadsheets()
-        result = sheet.values().get(spreadsheetId=self.new_spreadsheet_id, range='食品').execute()
-        values = result.get('values', [])
+        time.sleep(6) #spreadsheetがタブレットからドライブに同期されるのを待つため
+        response = drive_service.files().list(q=f"'{st.FOLDER_ID}' in parents and trashed=false").execute()
+        files = response.get('files', [])
+        excel_files = [file for file in files if file['name'] == today_order_file and file['mimeType'] == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+        excel_file_id = excel_files[0]['id']
+        print(f"Found spreadsheet: {today_order_file} with ID: {excel_file_id}")
+        # ExcelファイルをGoogleスプレッドシートに変換(リトライロジック組み込み済み)
+        max_retries = 5
+        initial_wait_time = 1  # 初期の待機時間（秒）
+        max_wait_time = 64  # 最大の待機時間（秒）
+        for retry_count in range(max_retries):
+            try:
+                copied_file = {
+                    'name': today_order_file.replace('.xlsx', ''),
+                    'mimeType': 'application/vnd.google-apps.spreadsheet'
+                }
+                converted_file = drive_service.files().copy(fileId=excel_file_id, body=copied_file).execute()
+                spreadsheet_id = converted_file['id']
+                print(f"Converted to Google Spreadsheet with ID: {spreadsheet_id}")
+                break  # 成功した場合はループを抜ける
+            except HttpError as error:
+                if error.resp.status in [403, 429] and 'userRateLimitExceeded' in error.content.decode():
+                    wait_time = min(initial_wait_time * (2 ** retry_count) + random.randint(0, 1000) / 1000, max_wait_time)
+                    print(f"Rate limit exceeded. Retrying in {wait_time} seconds...")
+                    time.sleep(wait_time)
+                else:
+                    raise
+        else:
+            raise Exception("Max retries exceeded")
+        
+        try:
+            # シートのデータを取得
+            sheet = sheets_service.spreadsheets()
+            result_food = sheet.values().get(spreadsheetId=spreadsheet_id, range='食品').execute()
+            result_nonfood = sheet.values().get(spreadsheetId=spreadsheet_id, range='非食品').execute()
+            values_food = result_food.get('values', [])
+            values_nonfood = result_nonfood.get('values', [])
+        finally:
+            drive_service.files().update(fileId=spreadsheet_id, body={'trashed': True}).execute()
         # 指定した複数の列をDataFrameに変換
-        if not values:
+        if not values_food:
             print('No data found in the sheet.')
             return False
         else:
-            max_columns = len(values[0])
-            data = [row + [np.nan] * (max_columns - len(row)) for row in values[1:]]
-            df = pd.DataFrame(data, columns=values[0])  # 1行目はヘッダーとして利用
+            max_columns = len(values_food[0])
+            data = [row + [np.nan] * (max_columns - len(row)) for row in values_food[1:]]
+            df = pd.DataFrame(data, columns=values_food[0])  # 1行目はヘッダーとして利用
             self.input_df = df[['商品名', 'セット','商品コード', '現在庫', '発注数']]
             self.input_df.replace('', np.nan, inplace=True)
             Name_with_NaN = self.input_df[self.input_df['現在庫'].isna()]['商品名'].tolist()
@@ -248,7 +281,7 @@ class AutomationHandler:
                 self.input_df['セット'] = self.input_df['セット'].astype(int)
             return Name_with_NaN
             
-    def input_order_in_site(self, today_order_file):
+    def input_order_in_site(self):
         self.login_eos(st['EOS_ID'], st['EOS_PW'])
 
         #ウィンドウを最大化
@@ -258,8 +291,6 @@ class AutomationHandler:
         self.driver.find_element(By.CLASS_NAME, 'menupng2').click()
         input_order = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//a[@accesskey='3']")))
         input_order.click()
-
-
 
         #if os.path.exists(st.WIN32COM_GEN_PY_DIR):
         #    shutil.rmtree(st.WIN32COM_GEN_PY_DIR) # win32comのキャッシュをフォルダごと削除（これをしないとエラーが起こる）

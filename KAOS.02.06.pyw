@@ -479,7 +479,7 @@ class Page_7(Progress_Page): #同期確認
         elif len(NaN_ls) == 0:
             self.label_p.config(text="EOSへ発注数を入力中...")
             parent.attributes("-topmost", True)
-            input_order_success, parent.error_ls = parent.handler.input_order_in_site(parent.today_order_file)
+            input_order_success, parent.error_ls = parent.handler.input_order_in_site()
             self.progress.stop()
             if input_order_success: 
                 parent.show_frame(Page_8)         
