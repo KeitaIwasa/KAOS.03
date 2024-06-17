@@ -96,8 +96,11 @@ def handle_exception(exc):
     device_name=socket.gethostname()
     logging.error(f"Device: {device_name}")
     logging.error("Exception occurred", exc_info=exc)
-    notify_message = f"{st['SHOP_NAME']}\n\nhttps://drive.google.com/drive/folders/1H7Izz-u465KTKz6JpxVVsraO97y3jpW5?usp=drive_link"
-    send_line_notify(notify_message)
+    try:
+        notify_message = f"{st['SHOP_NAME']}\n\nhttps://drive.google.com/drive/folders/1H7Izz-u465KTKz6JpxVVsraO97y3jpW5?usp=drive_link"
+        send_line_notify(notify_message)
+    except Exception as e:
+        print(f"Failed send line notify:{e}")
     messagebox.showerror("Error", "予期せぬエラーが発生しました。\nアプリを再起動してください。\n問題が解決しない場合は岩佐に連絡してください。")
 
 def thread_with_error_handle(target, *args, **kwargs):
