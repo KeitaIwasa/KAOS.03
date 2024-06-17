@@ -168,8 +168,6 @@ class MainApplication(tk.Tk):
         self.today_order_file = None
         self.today_int = None
 
-        self.dir_path = os.path.dirname(os.path.abspath(__file__)) 
-
         self.handler = AutomationHandler()
         if st['comp'] == "True":
             self.show_frame(Page_1)
@@ -227,6 +225,7 @@ class List_Page(tk.Frame):
 class Page_0(tk.Frame):
     def __init__(self, parent):
         super().__init__(parent, width=400, height=300)
+
         if st["comp"] == "True":
             back_button = tk.Button(self, text='戻る', command=lambda: parent.show_frame(Page_1))
             back_button.place(relx=0, rely=0, anchor='nw', x=10, y=10)
@@ -276,26 +275,32 @@ class Page_0(tk.Frame):
         self.printer_combobox.set(df_PRINTER_NAME)
 
         # 保存ボタン
-        self.save_button = tk.Button(self.sub_frame, text="保存", command=self.save_settings)
+        self.save_button = tk.Button(self.sub_frame, text="保存", command=lambda:self.save_settings(parent))
         self.save_button.grid(row=4, column=0, columnspan=2, pady=10)
 
-    def save_settings(self):
-        store_name = self.shop_name_entry.get()
+    def save_settings(self, parent):
+        shop_name = self.shop_name_entry.get()
         eos_user_id = self.eos_user_id_entry.get()
         eos_password = self.eos_password_entry.get()
         printer = self.printer_combobox.get()
 
-        if store_name and eos_user_id and eos_password and printer:
-            timestamp = datetime.now()
-            file_content = f""";{timestamp}
+        if shop_name and eos_user_id and eos_password and printer:
+            if messagebox.askokcancel("設定の保存","現在の入力で設定を保存しますか？", detail="保存するとアプリが再起動します。"):
+                if not shop_name == st['SHOP_NAME']:
+                    print('getting shop_folder_id...')
+                    shop_folder_id = parent.handler.register_drive_id(shop_name)
+                else:
+                    shop_folder_id = st['SHOP_FOLDER_ID']
+                timestamp = datetime.now()
+                file_content = f""";{timestamp}
 [Settings]
 comp = True
-SHOP_NAME = {store_name}
+SHOP_NAME = {shop_name}
 EOS_ID = {eos_user_id}
 EOS_PW = {eos_password}
 PRINTER_NAME = {printer}
+SHOP_FOLDER_ID = {shop_folder_id}
         """        
-            if messagebox.askokcancel("設定の保存","現在の入力で設定を保存しますか？", detail="保存するとアプリが再起動します。"):
                 file_name = "config.ini"
                 # ファイルを作成して内容を書き込みます
                 if os.path.exists(file_name):

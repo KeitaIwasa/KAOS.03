@@ -69,6 +69,27 @@ class AutomationHandler:
             with open(token_path, 'w') as token:
                 token.write(creds.to_json())
         self.driver = None
+
+    def register_drive_id(self, shopName):
+        drive_service = build('drive', 'v3', credentials=creds)
+        parent_folder = '1H7Izz-u465KTKz6JpxVVsraO97y3jpW5'
+        new_folder_name = shopName
+        query = f"mimeType='application/vnd.google-apps.folder' and name='{new_folder_name}' and '{parent_folder}' in parents and trashed=false"
+        results = drive_service.files().list(q=query, spaces='drive', fields='files(id, name)').execute()
+        items = results.get('files', [])
+        print(items)
+        if len(items)==0:
+            file_metadata = {
+                'name': shopName,
+                'mimeType': 'application/vnd.google-apps.folder',
+                'parents': [parent_folder] # parent folder "KAOS発注書"
+            }
+            folder = drive_service.files().create(body=file_metadata, fields='id').execute()
+            new_folder_id = folder.get('id')
+            print('Folder created with ID:', new_folder_id)
+            return new_folder_id
+        else:
+            return None
         
     # EOSログインメソッド
     def login_eos(self, user_id, password):
