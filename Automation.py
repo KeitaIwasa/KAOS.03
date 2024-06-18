@@ -189,6 +189,8 @@ class AutomationHandler:
             file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
             csv_id = file.get("id")
             print(f'File ID: {csv_id}')
+        else:
+            csv_id = None
 
         script_service = build('script', 'v1', credentials=creds)
         script_id = 'AKfycbxK7pavgq0YZ-chJgYh_49eYCs0C6Gsm9RHBwpGIHFa4URkRXYivT8SeUVlt6nI-8Vbfg'
