@@ -215,7 +215,7 @@ class AutomationHandler:
             self.new_spreadsheet_id = debug_info.get('spreadsheetId')
             print('New Spreadsheet ID: {}'.format(self.new_spreadsheet_id))
 
-            spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{new_spreadsheet_id}/edit" 
+            spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{self.new_spreadsheet_id}/edit" 
             
             return spreadsheet_url
         #except Exception as e:
