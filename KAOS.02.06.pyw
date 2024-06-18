@@ -91,6 +91,9 @@ def handle_exception(exc):
     error_occurred = True
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     log_filename = f"error_log_{st['SHOP_NAME']}{current_time}.txt"
+    error_log_dir = 'error_log'
+    if not os.path.exists(error_log_dir):
+        os.makedirs(error_log_dir)
     log_file = os.path.join('error_log', log_filename)
     logging.basicConfig(filename=log_file, level=logging.ERROR, format='%(asctime)s - %(message)s', encoding='utf-8')
     device_name=socket.gethostname()
@@ -401,7 +404,7 @@ class Page_4(Progress_Page): #発注書作成
     def setup_form(self, parent):
         download_success = False 
         if parent.night_order == True:
-            download_success = parent.handler.download_csv(parent.today_real_int, parent.today_str_csv)
+            download_success = parent.handler.download_csv(parent.today_str_csv)
         if download_success or (parent.night_order == False):
             parent.spread_url = parent.handler.generate_form(parent.delivery_date_int, parent.today_str_csv, parent.yesterday_str, parent.today_str, parent.night_order)
             # QRコードの生成
@@ -441,7 +444,7 @@ class Page_5(Text_and_Button_Page): #発注明細ダウンロード失敗
         self.button1.config(text="ダウンロードした", command=lambda: self.check_download(parent))        
 
     def check_download(self, parent): 
-        if os.path.exists(f'{st.DOWNLOAD_DIR}/{parent.today_str_csv}_発注.CSV'):
+        if os.path.exists(f'{parent.handler.download_folder_path()}/{parent.today_str_csv}_発注.CSV'):
             parent.show_frame(Page_4)
         else :
             parent.show_frame(Page_5)
