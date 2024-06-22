@@ -2,7 +2,7 @@
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -26,7 +26,7 @@ import configparser
 import qrcode
 import httplib2
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
@@ -126,9 +126,10 @@ class AutomationHandler:
         download_folder = winreg.QueryValueEx(key, '{374DE290-123F-4565-9164-39C4925E467B}')[0]
         return download_folder
             
-    def download_csv(self, today_str_csv):
+    def download_csv(self, today_str_csv, today_int):
     
         old_csv_path = f'発注明細CSV/{today_str_csv}_発注.CSV'
+        old_csv_path_nonfood = f'発注明細CSV/{today_str_csv}_発注 (1).CSV'
         if os.path.exists(old_csv_path):
             pass
         else:
@@ -150,18 +151,49 @@ class AutomationHandler:
             max_retry_download = 20
             # 前日の発注明細をロード
             while retry_download <= max_retry_download:
-                current_time = time.time()
                 if os.path.exists(f'{self.download_folder_path()}/{today_str_csv}_発注.CSV'):
-                    self.driver.close()
-                    self.driver.quit() 
-                    self.driver = None  
-                    return True
+                    break
                 elif retry_download == max_retry_download:
                     self.driver.maximize_window()
                     return False    
                 else:
                     retry_download += 1
                     time.sleep(0.1)
+
+        if os.path.exists(old_csv_path_nonfood):
+            pass
+        else:
+            # 前日の日付を計算
+            yesterday_int = today_int - timedelta(days=1)
+            # 前日の日付を文字列に変換
+            yesterday_str = yesterday_int.strftime('%d')
+            # 前日の日付の番号を取得（"06" -> "6"のように先頭のゼロを取り除く）
+            yesterday_number = str(int(yesterday_str))
+            select_from_date = self.driver.find_element(By.ID, 'selectFromDay')
+            select_from = Select(select_from_date)
+            select_from.select_by_value(yesterday_number)
+
+            select_to_date = self.driver.find_element(By.ID, 'selectToDay')
+            select_to = Select(select_to_date)
+            select_to.select_by_value(yesterday_number)
+
+            select_kubun = self.driver.find_element(By.ID, 'selectOrderKubun')
+            select_kubun_nonfood = Select(select_kubun)
+            select_kubun_nonfood.select_by_value("2")
+            retry_download = 0
+            # 前々日の非食品の発注明細をダウンロード
+            while retry_download <= max_retry_download:
+                if os.path.exists(f'{self.download_folder_path()}/{today_str_csv}_発注 (1).CSV'):
+                    break
+                elif retry_download == max_retry_download:
+                    self.driver.maximize_window()
+                    return False    
+                else:
+                    retry_download += 1
+                    time.sleep(0.1)
+
+
+        
 
     def execute_with_retry(self, service, request, script_id, retries=3, timeout=120):
         http = httplib2.Http(timeout=timeout)
