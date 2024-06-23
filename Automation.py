@@ -128,9 +128,9 @@ class AutomationHandler:
             
     def download_csv(self, today_str_csv, today_int):
     
-        old_csv_path = f'発注明細CSV/{today_str_csv}_発注.CSV'
-        old_csv_path_nonfood = f'発注明細CSV/{today_str_csv}_発注 (1).CSV'
-        if os.path.exists(old_csv_path):
+        csv_path = f'発注明細CSV/{today_str_csv}_発注.CSV'
+        csv_path_nonfood = f'発注明細CSV/{today_str_csv}_発注 (1).CSV'
+        if os.path.exists(csv_path):
             pass
         else:
             self.login_eos(st['EOS_ID'], st['EOS_PW']) #EOSログインメソッド↑
@@ -160,7 +160,7 @@ class AutomationHandler:
                     retry_download += 1
                     time.sleep(0.1)
 
-        if os.path.exists(old_csv_path_nonfood):
+        if os.path.exists(csv_path_nonfood):
             pass
         else:
             # 前日の日付を計算
@@ -191,9 +191,13 @@ class AutomationHandler:
                 else:
                     retry_download += 1
                     time.sleep(0.1)
-
-
         
+        # 昨日の発注明細csvと一昨日の非食品の発注明細csvを合成
+        df1 = pd.read_csv(csv_path)      
+        df2 = pd.read_csv(csv_path_nonfood)
+        merged_df = pd.concat([df1, df2], ignore_index=True)  
+        merged_df.to_csv(csv_path, index=False)
+        return True
 
     def execute_with_retry(self, service, request, script_id, retries=3, timeout=120):
         http = httplib2.Http(timeout=timeout)

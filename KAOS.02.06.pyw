@@ -404,7 +404,7 @@ class Page_4(Progress_Page): #発注書作成
     def setup_form(self, parent):
         download_success = False 
         if parent.night_order == True:
-            download_success = parent.handler.download_csv(parent.today_str_csv)
+            download_success = parent.handler.download_csv(parent.today_str_csv, parent.today_int)
         if download_success or (parent.night_order == False):
             parent.spread_url = parent.handler.generate_form(parent.delivery_date_int, parent.today_str_csv, parent.yesterday_str, parent.today_str, parent.night_order)
             # QRコードの生成
