@@ -355,7 +355,7 @@ class Page_1(Text_and_Button_Page):
             self.button1.config(text="発注を中止", command=parent.quit)
         if parent.today_real_int:
             parent.today_str_csv = parent.today_real_int.strftime('%Y%m%d')
-        self.bind_all('<Control-m>', lambda e: self.place_entry(parent)) #開発用、任意の時刻を設定するコマンド
+        self.bind_all('<Control-t>', lambda e: self.place_entry(parent)) #開発用、任意の時刻を設定するコマンド
 
     def place_entry(self,parent):
         self.label1.config(text="日時を 'YYYY-MM-DD HH:MM:SS' 形式で入力してください")
@@ -475,7 +475,7 @@ class Page_7(Progress_Page): #同期確認
         threading.Thread(target=thread_with_error_handle, args=(self.confirm_googledive_sinch, parent,),daemon=True).start()
 
     def confirm_googledive_sinch(self, parent):
-        NaN_ls = parent.handler.get_spreadsheet(parent.today_str) #戻り値は現在庫が入力されてない商品名のリスト           
+        NaN_ls = parent.handler.get_spreadsheet() #戻り値は現在庫が入力されてない商品名のリスト           
         if NaN_ls is False:
             self.progress.stop()
             self.progress.pack_forget()
