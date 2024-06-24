@@ -18,6 +18,7 @@ import configparser
 import win32print
 import qrcode
 from PIL import Image, ImageTk
+import webbrowser
 
 try:
     from plyer import notification
@@ -228,6 +229,58 @@ class List_Page(tk.Frame):
         self.scroll_y.config(command=self.listbox.yview)
         self.scroll_x.config(command=self.listbox.xview)
 
+class ToolTip():
+    def __init__(self, widget, text="default tooltip"):
+        self.widget = widget
+        self.text = text
+        self.widget.bind("<Enter>", self.enter)
+        self.widget.bind("<Motion>", self.motion)
+        self.widget.bind("<Leave>", self.leave)
+        self.id = None
+        self.tw = None
+
+    def enter(self, event):
+        self.schedule()
+    
+    def motion(self, event):
+        self.unschedule()
+        self.schedule()
+    
+    def leave(self, event):
+        self.unschedule()
+        self.id = self.widget.after(100, self.hideTooltip)
+    
+    def schedule(self):
+        if self.tw:
+            return
+        self.unschedule()
+        self.id = self.widget.after(500, self.showTooltip)
+    
+    def unschedule(self):
+        id = self.id
+        self.id = None
+        if id:
+            self.widget.after_cancel(id)
+    
+    def showTooltip(self):
+        id = self.id
+        self.id = None
+        if id:
+            self.widget.after_cancel(id)
+        x, y = self.widget.winfo_pointerxy()
+        self.tw = tk.Toplevel(self.widget)
+        self.tw.wm_overrideredirect(True)
+        self.tw.geometry(f"+{x+10}+{y+10}")
+        label = tk.Label(self.tw, text=self.text, background="lightyellow",
+                         relief="solid", borderwidth=1, justify="left")
+        label.pack(ipadx=10)
+
+    def hideTooltip(self):
+        tw = self.tw
+        self.tw = None
+        if tw:
+            tw.destroy()
+
 class Page_0(tk.Frame):
     def __init__(self, parent):
         super().__init__(parent, width=400, height=300)
@@ -322,10 +375,20 @@ SHOP_FOLDER_ID = {shop_folder_id}
 class Page_1(Text_and_Button_Page):
     def __init__(self, parent):
         super().__init__(parent)
+        #設定ボタン
         setting_icon = tk.PhotoImage(file="setup/setting_icon.png").subsample(2,2)
         setting_button = tk.Button(self, image=setting_icon, compound="top", command=lambda: parent.show_frame(Page_0))
         setting_button.image = setting_icon
         setting_button.place(relx=0, rely=0, anchor='nw', x=10, y=10)
+        setting_button_tooltip = ToolTip(setting_button, "設定") 
+
+        #発注書変更ボタン
+        sheet_icon = tk.PhotoImage(file="setup/sheet_icon.png").subsample(2,2)
+        sheet_button = tk.Button(self, image=sheet_icon, compound="top", command=lambda: self.open_original_sheet(parent))
+        sheet_button.image = sheet_icon
+        sheet_button.place(relx=0, rely=0, anchor='nw', x=41, y=10)
+        sheet_button_tooltip = ToolTip(sheet_button, "発注書[原本]を編集") 
+
         parent.attributes("-topmost", True)
         parent.attributes("-topmost", False)
         # 本日の日付を取得 as YYYY-MM-DD
@@ -371,7 +434,11 @@ class Page_1(Text_and_Button_Page):
         with freeze_time(dt):
             # 固定された現在時刻を表示
             print("固定された現在時刻: ", datetime.now())
-            parent.show_frame(Page_1)     
+            parent.show_frame(Page_1) 
+
+    def open_original_sheet(self, parent):
+            original_sheet_url = parent.handler.get_original_sheet()
+            webbrowser.open(original_sheet_url)
 
 class Page_2(Text_and_Button_Page):
     def __init__(self, parent):

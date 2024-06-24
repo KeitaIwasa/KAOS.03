@@ -84,6 +84,23 @@ class AutomationHandler:
             return new_folder_id
         else:
             return items[0]['id']
+    
+    def get_original_sheet(self):
+        drive_service = build('drive', 'v3', credentials=creds)
+        sheet_name = f'発注書【原本】_{st["SHOP_NAME"]}'
+        query = f"'{st['SHOP_FOLDER_ID']}' in parents and name contains '{sheet_name}' and trashed = false and mimeType='application/vnd.google-apps.spreadsheet'"
+        results = drive_service.files().list(
+            q=query,
+            fields='files(id, name)').execute()
+        items = results.get('files', [])
+        if not items:
+            return False
+        else:
+            sheet_id = items[0]['id']
+            sheet_url=f'https://docs.google.com/spreadsheets/d/{sheet_id}/edit?'
+            return sheet_url
+
+
         
     # EOSログインメソッド
     def login_eos(self, user_id, password):
