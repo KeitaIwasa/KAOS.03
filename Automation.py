@@ -299,6 +299,7 @@ class AutomationHandler:
             print('No data found in the sheet.')
             return False
         else:
+            #食品
             max_columns = len(values_food[0])
             data = [row + [np.nan] * (max_columns - len(row)) for row in values_food[1:]]
             df = pd.DataFrame(data, columns=values_food[0])  # 1行目はヘッダーとして利用
@@ -311,6 +312,16 @@ class AutomationHandler:
                 self.input_df['現在庫'] = self.input_df['現在庫'].astype(int)
                 self.input_df['発注数'] = self.input_df['発注数'].astype(int)
                 self.input_df['セット'] = self.input_df['セット'].astype(int)
+
+            #非食品
+            max_columns = len(values_nonfood[1])#商品名の列
+            data = [row + [np.nan] * (max_columns - len(row)) for row in values_nonfood[1:]]
+            df = pd.DataFrame(data, columns=values_nonfood[0])
+            input_df_nonfood = df[['商品名', '商品コード', '発注数']]
+            # '発注数'がNaNまたは0の行を削除
+            input_df_nonfood = input_df_nonfood.dropna(subset=['発注数'])
+            input_df_nonfood = input_df_nonfood[input_df_nonfood['発注数'] != 0]
+            self.input_df_nonfood = input_df_nonfood.reset_index(drop=True, inplace=True)
             return Name_with_NaN
             
     def input_order_in_site(self):
