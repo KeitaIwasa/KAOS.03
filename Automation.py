@@ -240,7 +240,7 @@ class AutomationHandler:
         script_id = 'AKfycbxK7pavgq0YZ-chJgYh_49eYCs0C6Gsm9RHBwpGIHFa4URkRXYivT8SeUVlt6nI-8Vbfg'
         request = {
             'function': 'generateForm',
-            'parameters': [delivery_date_int.isoformat(), csv_id, yesterday_str, today_str, night_order, st['SHOP_NAME']]
+            'parameters': [delivery_date_int.isoformat(), csv_id, today_str, night_order, st['SHOP_NAME']]
         }
         #try:
         response = script_service.scripts().run(body=request, scriptId=script_id).execute()
