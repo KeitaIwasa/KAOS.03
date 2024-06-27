@@ -122,12 +122,12 @@ class AutomationHandler:
         drive_service = build('drive', 'v3', credentials=creds)
         orderform_folder = self.find_folder_id(drive_service, st['SHOP_FOLDER_ID'], '発注書')
         sheets = self.find_files_id(drive_service, orderform_folder, sheet_name)
-        sheet_id = sheets[0]['id']
-        spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/edit"
-        if sheets:
-            return sheet_id, spreadsheet_url
-        else:
+        if sheets is False:
             return False
+        else:
+            sheet_id = sheets[0]['id']
+            spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/edit"
+            return sheet_id, spreadsheet_url    
         
     # EOSログインメソッド
     def login_eos(self, user_id, password):
