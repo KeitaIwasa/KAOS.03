@@ -122,12 +122,12 @@ class AutomationHandler:
         drive_service = build('drive', 'v3', credentials=creds)
         orderform_folder = self.find_folder_id(drive_service, st['SHOP_FOLDER_ID'], '発注書')
         sheets = self.find_files_id(drive_service, orderform_folder, sheet_name)
-        sheet_id = sheets[0]['id']
-        spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/edit"
-        if sheets:
-            return sheet_id, spreadsheet_url
-        else:
+        if sheets is False:
             return False
+        else:
+            sheet_id = sheets[0]['id']
+            spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/edit"
+            return sheet_id, spreadsheet_url    
         
     # EOSログインメソッド
     def login_eos(self, user_id, password):
@@ -354,6 +354,8 @@ class AutomationHandler:
             data = [row + [np.nan] * (max_columns - len(row)) for row in values_nonfood[1:]]
             df = pd.DataFrame(data, columns=values_nonfood[0])
             input_df_nonfood = df[['商品名', '商品コード', '発注数']]
+            input_df_nonfood['発注数'] = input_df_nonfood['発注数'].astype(str).str.strip()
+            input_df_nonfood['発注数'] = pd.to_numeric(input_df_nonfood['発注数'], errors='coerce')
             # '発注数'がNaNまたは0の行を削除
             input_df_nonfood = input_df_nonfood.dropna(subset=['発注数'])
             input_df_nonfood = input_df_nonfood[input_df_nonfood['発注数'] != 0]
