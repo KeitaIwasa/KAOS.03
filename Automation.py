@@ -100,6 +100,35 @@ class AutomationHandler:
             sheet_url=f'https://docs.google.com/spreadsheets/d/{sheet_id}/edit?'
             return sheet_url
         
+    def find_folder_id(self, service, parent_folder_id, folder_name):
+        query = f"'{parent_folder_id}' in parents and mimeType = 'application/vnd.google-apps.folder' and name = '{folder_name}' and trashed = false"
+        results = service.files().list(q=query, fields="files(id, name)").execute()
+        items = results.get('files', [])
+        if not items:
+            print(f'No folder found with name: {folder_name}')
+            return None
+        return items[0]['id']
+    
+    def find_files_id(self, service, folder_id, file_name):
+        query = f"'{folder_id}' in parents and name = '{file_name}' and trashed = false"
+        results = service.files().list(q=query, fields="files(id, name)").execute()
+        items = results.get('files', [])
+        if not items:
+            print(f'No file found with name: {file_name}')
+            return False
+        return items
+
+    def check_existing_sheet(self, sheet_name):
+        drive_service = build('drive', 'v3', credentials=creds)
+        orderform_folder = self.find_folder_id(drive_service, st['SHOP_FOLDER_ID'], '発注書')
+        sheets = self.find_files_id(drive_service, orderform_folder, sheet_name)
+        sheet_id = sheets[0]['id']
+        spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/edit"
+        if sheets:
+            return sheet_id, spreadsheet_url
+        else:
+            return False
+        
     # EOSログインメソッド
     def login_eos(self, user_id, password):
         if self.driver is None:
@@ -286,20 +315,19 @@ class AutomationHandler:
 
             spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{self.new_spreadsheet_id}/edit" 
             
-            return spreadsheet_url
+            return self.new_spreadsheet_id, spreadsheet_url
         #except Exception as e:
         #    print(f"Failed to execute the script: {e}")
         #    return False
 
-    def get_spreadsheet(self):
+    def get_spreadsheet(self, sheet_id):
         sheets_service = build('sheets', 'v4', credentials=creds)
         time.sleep(6) #spreadsheetがタブレットからドライブに同期されるのを待つため
-        spreadsheet_id = self.new_spreadsheet_id
         
         # シートのデータを取得
         sheet = sheets_service.spreadsheets()
-        result_food = sheet.values().get(spreadsheetId=spreadsheet_id, range='食品').execute()
-        result_nonfood = sheet.values().get(spreadsheetId=spreadsheet_id, range='非食品').execute()
+        result_food = sheet.values().get(spreadsheetId=sheet_id, range='食品').execute()
+        result_nonfood = sheet.values().get(spreadsheetId=sheet_id, range='非食品').execute()
         values_food = result_food.get('values', [])
         values_nonfood = result_nonfood.get('values', [])
         # 指定した複数の列をDataFrameに変換
@@ -333,7 +361,11 @@ class AutomationHandler:
             if input_df_nonfood.shape[0] == 0: 
                 self.input_df_nonfood = None
             else:
-                self.input_df_nonfood = input_df_nonfood.reset_index(drop=True, inplace=True)
+                self.input_df_nonfood = input_df_nonfood.reset_index(drop=True)
+                self.input_df_nonfood.replace('', np.nan, inplace=True)
+                self.input_df_nonfood['商品コード'] = self.input_df_nonfood['商品コード'].astype(int)
+                self.input_df_nonfood['発注数'] = self.input_df_nonfood['発注数'].astype(int)
+            
             return Name_with_NaN
             
     def input_order_in_site(self):
@@ -355,11 +387,14 @@ class AutomationHandler:
         error_ls = [] #入力エラーの空リストを作成
         for df in input_df_tuple:
             if df is self.input_df:
-                pass
+                print(f'df is self.input')
             elif df is None:
+                print(f'df is None')
                 continue
             else:
-                WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'pushDay2'))).click()
+                print(f'df is else')
+                WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'pushDay2')))
+                self.driver.find_elements(By.CLASS_NAME, 'pushDay2')[0].click()
 
             # 発注サイトの商品番号をリストにする
             WebDriverWait(self.driver, 10).until(EC.presence_of_all_elements_located((By.CLASS_NAME, 'scode')))
@@ -382,42 +417,46 @@ class AutomationHandler:
 
             dict_data = pd.Series(df['商品名'].values, index=df['商品コード'].values) #商品名：商品コードの辞書作成
 
-            # 食品入力
+            # 入力
             for row in df.itertuples():
                 if row.発注数 <= 0:
                     continue
-            else:
-                try:
-                    table_id = table_prdx_number_dict[row.商品コード] #発注する商品番号から商品のprdx値を求める
-                except:
-                    error_ls.append(f"{row.商品コード}：{dict_data[row.商品コード]}（エラー理由：EOSに存在しない商品, 商品番号の誤り, お気に入り未登録）")
-                    continue
-                set_value = int(self.driver.find_element(By.ID, table_id).get_attribute('data-sthtsu')) #セット数（EOS由来）
-                order_value = set_value * row.発注数 #発注入力数
+                else:
+                    try:
+                        table_id = table_prdx_number_dict[row.商品コード] #発注する商品番号から商品のprdx値を求める
+                    except:
+                        error_ls.append(f"{row.商品コード}：{dict_data[row.商品コード]}（エラー理由：EOSに存在しない商品, 商品番号の誤り, お気に入り未登録）")
+                        continue
+                    set_value = int(self.driver.find_element(By.ID, table_id).get_attribute('data-sthtsu')) #セット数（EOS由来）
+                    order_value = set_value * row.発注数 #発注入力数
+                    print(f'{row.商品名}:{order_value}')
 
-                if not set_value == row.セット: #発注書とEOSのセット数が一致しているか確認
-                    print(f"商品番号：{row.商品コード}のセット数が誤っています。発注書のセット数を修正してください。")
-                    
-                try:
-                    input_field = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, table_id)))
-                    input_field.clear() #input_fieldのデフォルト0をクリア   
-                    input_field.send_keys(order_value) #発注数を入力
-                except: 
-                    dialog_text = self.driver.find_element(By.ID, 'divDialog').text
-                    if '制限数量' in dialog_text:
-                        error_ls.append(f'{former_input_number}：{dict_data[former_input_number]}（エラー理由：発注数MAX超え）')
-                        self.driver.find_element(By.CLASS_NAME, 'ui-icon-closethick').click() # ×ボタンでダイアログを閉じる
-                        input_field = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, former_table_id)))
-                        input_field.clear()
-                        former_max_order_value = int(self.driver.find_element(By.ID, former_table_id).get_attribute('data-sgosuu')) - 1
-                        input_field.send_keys(former_max_order_value) #発注数を入力  
+                    if  df is self.input_df:
+                        if not set_value == row.セット: #発注書とEOSのセット数が一致しているか確認
+                            print(f"商品番号：{row.商品コード}のセット数が誤っています。発注書のセット数を修正してください。")
                     else:
-                        error_ls.append(f'{former_input_number}：{dict_data[former_input_number]}（エラー理由：不明）')
-                        self.driver.find_element(By.CLASS_NAME, 'ui-icon-closethick').click() # ×ボタンでダイアログを閉じる
-                    
-                    input_field = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, table_id)))
-                    input_field.clear() #input_fieldのデフォルト0をクリア   
-                    input_field.send_keys(order_value) #発注数を入力
+                        pass
+                        
+                    try:
+                        input_field = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, table_id)))
+                        input_field.clear() #input_fieldのデフォルト0をクリア   
+                        input_field.send_keys(order_value) #発注数を入力
+                    except: 
+                        dialog_text = self.driver.find_element(By.ID, 'divDialog').text
+                        if '制限数量' in dialog_text:
+                            error_ls.append(f'{former_input_number}：{dict_data[former_input_number]}（エラー理由：発注数MAX超え）')
+                            self.driver.find_element(By.CLASS_NAME, 'ui-icon-closethick').click() # ×ボタンでダイアログを閉じる
+                            input_field = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, former_table_id)))
+                            input_field.clear()
+                            former_max_order_value = int(self.driver.find_element(By.ID, former_table_id).get_attribute('data-sgosuu')) - 1
+                            input_field.send_keys(former_max_order_value) #発注数を入力  
+                        else:
+                            error_ls.append(f'{former_input_number}：{dict_data[former_input_number]}（エラー理由：不明）')
+                            self.driver.find_element(By.CLASS_NAME, 'ui-icon-closethick').click() # ×ボタンでダイアログを閉じる
+                        
+                        input_field = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, table_id)))
+                        input_field.clear() #input_fieldのデフォルト0をクリア   
+                        input_field.send_keys(order_value) #発注数を入力
 
                 former_table_id = table_id
                 former_input_number = row.商品コード  

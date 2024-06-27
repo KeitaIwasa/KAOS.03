@@ -445,9 +445,10 @@ class Page_2(Text_and_Button_Page):
         super().__init__(parent)
 
         self.label1.config(text='発注が完了するまでこのウィンドウは閉じないでください。')
-        parent.today_order_file = f'発注書_{parent.today_str}.xlsx' 
-        if os.path.exists(parent.today_order_file): 
-            self.button1.config(text="OK", command=lambda: parent.show_frame(Page_3))
+        parent.today_order_file = f'発注書_{parent.today_str}' 
+        parent.sheet_id, parent.sheet_url = parent.handler.check_existing_sheet(parent.today_order_file)
+        if parent.sheet_id: 
+            self.button1.config(text="OK", command=lambda: parent.show_frame(Page_3))            
         else:
             self.button1.config(text="OK", command=lambda: parent.show_frame(Page_4))
 
@@ -473,30 +474,7 @@ class Page_4(Progress_Page): #発注書作成
         if parent.night_order == True:
             download_success = parent.handler.download_csv(parent.today_str_csv, parent.today_int)
         if download_success or (parent.night_order == False):
-            parent.spread_url = parent.handler.generate_form(parent.delivery_date_int, parent.today_str_csv, parent.yesterday_str, parent.today_str, parent.night_order)
-            # QRコードの生成
-            qr = qrcode.QRCode(
-                version=1,
-                error_correction=qrcode.constants.ERROR_CORRECT_L,
-                box_size=3.5,
-                border=3,
-            )
-            qr.add_data(parent.spread_url)
-            qr.make(fit=True)
-
-            # QRコードの画像を生成
-            img = qr.make_image(fill_color="black", back_color="white").convert("RGBA")
-            # 画像の背景を透明に変更
-            data = img.getdata()
-            new_data = []
-            for item in data:
-                # 白いピクセルを透明に設定
-                if item[:3] == (255, 255, 255):
-                    new_data.append((255, 255, 255, 0))
-                else:
-                    new_data.append(item)
-            img.putdata(new_data)
-            parent.qr_img = ImageTk.PhotoImage(img)
+            parent.sheet_id, parent.sheet_url = parent.handler.generate_form(parent.delivery_date_int, parent.today_str_csv, parent.yesterday_str, parent.today_str, parent.night_order)
             self.progress.stop()
             parent.show_frame(Page_6)
         else:
@@ -522,9 +500,10 @@ class Page_6(Text_and_Button_Page): #発注書生成完了&入力確認
         parent.attributes("-topmost", False)
         self.label1.config(text="発注書が作成されました。タブレットでQRコードを読み込み、現在庫数を入力してください。") 
         self.label1.pack(pady=(50,10))
-        self.button1.pack_forget()
-        label_qr = tk.Label(self, image=parent.qr_img)
+        self.qr_img = self.make_qr(parent.sheet_url)
+        label_qr = tk.Label(self, image=self.qr_img)
         label_qr.pack()
+        self.button1.pack_forget()
         self.button1 = tk.Button(self, text="入力完了", command=lambda:self.confirm_filling(parent))
         self.button1.pack()
     
@@ -532,7 +511,35 @@ class Page_6(Text_and_Button_Page): #発注書生成完了&入力確認
         self.label1.config(text="タブレットで現在庫数をすべて入力しましたか？")
         self.button1.config(text="はい", command=lambda: parent.show_frame(Page_7))
 
-class Page_7(Progress_Page): #同期確認
+    def make_qr(self, url):
+        # QRコードの生成
+        print(url)
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=3.5,
+            border=3,
+        )
+        qr.add_data(url)
+        qr.make(fit=True)
+
+        # QRコードの画像を生成
+        img = qr.make_image(fill_color="black", back_color="white").convert("RGBA")
+        # 画像の背景を透明に変更
+        data = img.getdata()
+        new_data = []
+        for item in data:
+            # 白いピクセルを透明に設定
+            if item[:3] == (255, 255, 255):
+                new_data.append((255, 255, 255, 0))
+            else:
+                new_data.append(item)
+        img.putdata(new_data)
+        qr_img = ImageTk.PhotoImage(img)
+        return qr_img
+
+
+class Page_7(Progress_Page): #発注数取得・入力
     def __init__(self, parent):
         super().__init__(parent)
         self.label_p.config(text="発注書からデータを取得しています...")
@@ -542,7 +549,7 @@ class Page_7(Progress_Page): #同期確認
         threading.Thread(target=thread_with_error_handle, args=(self.confirm_googledive_sinch, parent,),daemon=True).start()
 
     def confirm_googledive_sinch(self, parent):
-        NaN_ls = parent.handler.get_spreadsheet() #戻り値は現在庫が入力されてない商品名のリスト           
+        NaN_ls = parent.handler.get_spreadsheet(parent.sheet_id) #戻り値は現在庫が入力されてない商品名のリスト           
         if NaN_ls is False:
             self.progress.stop()
             self.progress.pack_forget()
@@ -593,11 +600,7 @@ class Page_8(List_Page):
         self.scroll_x.pack_forget()
         self.listbox_frame.pack_forget()
         todo_list = []
-        if parent.today_int.weekday() in {1, 3, 5}: #本日が火・木・土の場合
-            todo_list.append('EOSで「発注手続きへ」をクリックして、発注確定する。')
-            todo_list.append('今日は非食品の発注日です。非食品の発注数を入力して、再度発注確定を行い、印刷する。')
-        else:
-            todo_list.append('EOSで「発注手続きへ」をクリックして、発注確定・印刷する。')
+        todo_list.append('EOSで「発注手続きへ」をクリックして、発注確定・印刷する。')
 
         if st['SHOP_NAME'] in {"自由が丘メープル通り", "岩佐Surface"}:
             todo_list.append('たまごを忘れず発注する。')
