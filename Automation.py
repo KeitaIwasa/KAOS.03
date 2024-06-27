@@ -144,14 +144,13 @@ class AutomationHandler:
         return download_folder
             
     def download_csv(self, today_str_csv, today_int):
-    
+        self.login_eos(st['EOS_ID'], st['EOS_PW']) #EOSログインメソッド↑
         self.csv_path = f'{self.download_folder_path()}/{today_str_csv}_発注.CSV'
         self.csv_path_nonfood = f'{self.download_folder_path()}/{today_str_csv}_発注 (1).CSV'
+        max_retry_download = 20
         if os.path.exists(self.csv_path):
             pass
-        else:
-            self.login_eos(st['EOS_ID'], st['EOS_PW']) #EOSログインメソッド↑
-            
+        else:            
             # 左メニューの発注照会をクリック
             WebDriverWait(self.driver, 15).until(EC.presence_of_element_located((By.CLASS_NAME, 'menupng2'))).click() #発注
             WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//a[@accesskey='4']"))).click() #発注照会クリック
@@ -166,7 +165,6 @@ class AutomationHandler:
 
             today_str_csv = datetime.today().strftime('%Y%m%d') #本日の日付（ダウンロードした発注明細csvは発注日付に関係なく本日のreal日付が付いている）
             retry_download = 0
-            max_retry_download = 20
             # 前日の発注明細をロード
             while retry_download <= max_retry_download:
                 if os.path.exists(self.csv_path):
@@ -182,12 +180,16 @@ class AutomationHandler:
             if os.path.exists(self.csv_path_nonfood):
                 pass
             else:
+                # 左メニューの発注照会をクリック
+                WebDriverWait(self.driver, 15).until(EC.presence_of_element_located((By.CLASS_NAME, 'menupng2'))).click() #発注
+                WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//a[@accesskey='4']"))).click() #発注照会クリック
                 # 前日の日付を計算
                 yesterday_int = today_int - timedelta(days=1)
                 # 前日の日付を文字列に変換
                 yesterday_str = yesterday_int.strftime('%d')
                 # 前日の日付の番号を取得（"06" -> "6"のように先頭のゼロを取り除く）
                 yesterday_number = str(int(yesterday_str))
+                WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'selectFromDay')))
                 select_from_date = self.driver.find_element(By.ID, 'selectFromDay')
                 select_from = Select(select_from_date)
                 select_from.select_by_value(yesterday_number)
@@ -200,7 +202,6 @@ class AutomationHandler:
                 select_kubun_nonfood = Select(select_kubun)
                 select_kubun_nonfood.select_by_value("2")
 
-                # 本日の発注を照会
                 WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'inquiryButton'))).click() #照会ボタン
                 time.sleep(0.5)
                     
@@ -216,11 +217,12 @@ class AutomationHandler:
                         retry_download += 1
                         time.sleep(0.1)
             
-            # 昨日の発注明細csvと一昨日の非食品の発注明細csvを合成
-            df1 = pd.read_csv(self.csv_path)      
-            df2 = pd.read_csv(self.csv_path_nonfood)
-            merged_df = pd.concat([df1, df2], ignore_index=True)  
-            merged_df.to_csv(self.csv_path, index=False)
+            # 昨日の発注明細csvと一昨日の非食品の発注明細csvを合成  
+            if os.path.exists(self.csv_path_nonfood):
+                df1 = pd.read_csv(self.csv_path)
+                df2 = pd.read_csv(self.csv_path_nonfood)
+                merged_df = pd.concat([df1, df2], ignore_index=True)  
+                merged_df.to_csv(self.csv_path, index=False)
         return True
 
     def execute_with_retry(self, service, request, script_id, retries=3, timeout=120):
