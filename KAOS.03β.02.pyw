@@ -636,10 +636,10 @@ def hide_files():
         item_path = os.path.join(directory, item)
         # ファイルが除外リストにない場合
         if os.path.isfile(item_path) and item not in exclude_files:
-            os.system(f'attrib +h "{item_path}"')
+            subprocess.run(['attrib', '+h', item_path], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         # ディレクトリが除外リストにない場合
         elif os.path.isdir(item_path) and item not in exclude_dirs:
-            os.system(f'attrib +h "{item_path}"')
+            subprocess.run(['attrib', '+h', item_path], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 if __name__ == "__main__":
     try:
