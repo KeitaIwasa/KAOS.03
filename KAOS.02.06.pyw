@@ -446,7 +446,11 @@ class Page_2(Text_and_Button_Page):
 
         self.label1.config(text='発注が完了するまでこのウィンドウは閉じないでください。')
         parent.today_order_file = f'発注書_{parent.today_str}' 
-        parent.sheet_id, parent.sheet_url = parent.handler.check_existing_sheet(parent.today_order_file)
+        check_result = parent.handler.check_existing_sheet(parent.today_order_file)
+        if check_result == False:
+            parent.sheet_id, parent.sheet_url = None, None
+        else:
+            parent.sheet_id, parent.sheet_url = check_result
         if parent.sheet_id: 
             self.button1.config(text="OK", command=lambda: parent.show_frame(Page_3))            
         else:

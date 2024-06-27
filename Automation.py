@@ -354,6 +354,8 @@ class AutomationHandler:
             data = [row + [np.nan] * (max_columns - len(row)) for row in values_nonfood[1:]]
             df = pd.DataFrame(data, columns=values_nonfood[0])
             input_df_nonfood = df[['商品名', '商品コード', '発注数']]
+            input_df_nonfood['発注数'] = input_df_nonfood['発注数'].astype(str).str.strip()
+            input_df_nonfood['発注数'] = pd.to_numeric(input_df_nonfood['発注数'], errors='coerce')
             # '発注数'がNaNまたは0の行を削除
             input_df_nonfood = input_df_nonfood.dropna(subset=['発注数'])
             input_df_nonfood = input_df_nonfood[input_df_nonfood['発注数'] != 0]
