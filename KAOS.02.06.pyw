@@ -18,6 +18,7 @@ import configparser
 import win32print
 import qrcode
 from PIL import Image, ImageTk
+import webbrowser
 
 try:
     from plyer import notification
@@ -91,13 +92,19 @@ def handle_exception(exc):
     error_occurred = True
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     log_filename = f"error_log_{st['SHOP_NAME']}{current_time}.txt"
+    error_log_dir = 'error_log'
+    if not os.path.exists(error_log_dir):
+        os.makedirs(error_log_dir)
     log_file = os.path.join('error_log', log_filename)
     logging.basicConfig(filename=log_file, level=logging.ERROR, format='%(asctime)s - %(message)s', encoding='utf-8')
     device_name=socket.gethostname()
     logging.error(f"Device: {device_name}")
     logging.error("Exception occurred", exc_info=exc)
-    notify_message = f"{st['SHOP_NAME']}\n\nhttps://drive.google.com/drive/folders/1H7Izz-u465KTKz6JpxVVsraO97y3jpW5?usp=drive_link"
-    send_line_notify(notify_message)
+    try:
+        notify_message = f"{st['SHOP_NAME']}\n\nhttps://drive.google.com/drive/folders/1H7Izz-u465KTKz6JpxVVsraO97y3jpW5?usp=drive_link"
+        send_line_notify(notify_message)
+    except Exception as e:
+        print(f"Failed send line notify:{e}")
     messagebox.showerror("Error", "予期せぬエラーが発生しました。\nアプリを再起動してください。\n問題が解決しない場合は岩佐に連絡してください。")
 
 def thread_with_error_handle(target, *args, **kwargs):
@@ -168,8 +175,6 @@ class MainApplication(tk.Tk):
         self.today_order_file = None
         self.today_int = None
 
-        self.dir_path = os.path.dirname(os.path.abspath(__file__)) 
-
         self.handler = AutomationHandler()
         if st['comp'] == "True":
             self.show_frame(Page_1)
@@ -224,9 +229,62 @@ class List_Page(tk.Frame):
         self.scroll_y.config(command=self.listbox.yview)
         self.scroll_x.config(command=self.listbox.xview)
 
+class ToolTip():
+    def __init__(self, widget, text="default tooltip"):
+        self.widget = widget
+        self.text = text
+        self.widget.bind("<Enter>", self.enter)
+        self.widget.bind("<Motion>", self.motion)
+        self.widget.bind("<Leave>", self.leave)
+        self.id = None
+        self.tw = None
+
+    def enter(self, event):
+        self.schedule()
+    
+    def motion(self, event):
+        self.unschedule()
+        self.schedule()
+    
+    def leave(self, event):
+        self.unschedule()
+        self.id = self.widget.after(100, self.hideTooltip)
+    
+    def schedule(self):
+        if self.tw:
+            return
+        self.unschedule()
+        self.id = self.widget.after(500, self.showTooltip)
+    
+    def unschedule(self):
+        id = self.id
+        self.id = None
+        if id:
+            self.widget.after_cancel(id)
+    
+    def showTooltip(self):
+        id = self.id
+        self.id = None
+        if id:
+            self.widget.after_cancel(id)
+        x, y = self.widget.winfo_pointerxy()
+        self.tw = tk.Toplevel(self.widget)
+        self.tw.wm_overrideredirect(True)
+        self.tw.geometry(f"+{x+10}+{y+10}")
+        label = tk.Label(self.tw, text=self.text, background="lightyellow",
+                         relief="solid", borderwidth=1, justify="left")
+        label.pack(ipadx=10)
+
+    def hideTooltip(self):
+        tw = self.tw
+        self.tw = None
+        if tw:
+            tw.destroy()
+
 class Page_0(tk.Frame):
     def __init__(self, parent):
         super().__init__(parent, width=400, height=300)
+
         if st["comp"] == "True":
             back_button = tk.Button(self, text='戻る', command=lambda: parent.show_frame(Page_1))
             back_button.place(relx=0, rely=0, anchor='nw', x=10, y=10)
@@ -276,26 +334,32 @@ class Page_0(tk.Frame):
         self.printer_combobox.set(df_PRINTER_NAME)
 
         # 保存ボタン
-        self.save_button = tk.Button(self.sub_frame, text="保存", command=self.save_settings)
+        self.save_button = tk.Button(self.sub_frame, text="保存", command=lambda:self.save_settings(parent))
         self.save_button.grid(row=4, column=0, columnspan=2, pady=10)
 
-    def save_settings(self):
-        store_name = self.shop_name_entry.get()
+    def save_settings(self, parent):
+        shop_name = self.shop_name_entry.get()
         eos_user_id = self.eos_user_id_entry.get()
         eos_password = self.eos_password_entry.get()
         printer = self.printer_combobox.get()
 
-        if store_name and eos_user_id and eos_password and printer:
-            timestamp = datetime.now()
-            file_content = f""";{timestamp}
+        if shop_name and eos_user_id and eos_password and printer:
+            if messagebox.askokcancel("設定の保存","現在の入力で設定を保存しますか？", detail="保存するとアプリが再起動します。"):
+                if not shop_name == st['SHOP_NAME']:
+                    print('getting shop_folder_id...')
+                    shop_folder_id = parent.handler.register_drive_id(shop_name)
+                else:
+                    shop_folder_id = st['SHOP_FOLDER_ID']
+                timestamp = datetime.now()
+                file_content = f""";{timestamp}
 [Settings]
 comp = True
-SHOP_NAME = {store_name}
+SHOP_NAME = {shop_name}
 EOS_ID = {eos_user_id}
 EOS_PW = {eos_password}
 PRINTER_NAME = {printer}
+SHOP_FOLDER_ID = {shop_folder_id}
         """        
-            if messagebox.askokcancel("設定の保存","現在の入力で設定を保存しますか？", detail="保存するとアプリが再起動します。"):
                 file_name = "config.ini"
                 # ファイルを作成して内容を書き込みます
                 if os.path.exists(file_name):
@@ -311,10 +375,20 @@ PRINTER_NAME = {printer}
 class Page_1(Text_and_Button_Page):
     def __init__(self, parent):
         super().__init__(parent)
+        #設定ボタン
         setting_icon = tk.PhotoImage(file="setup/setting_icon.png").subsample(2,2)
         setting_button = tk.Button(self, image=setting_icon, compound="top", command=lambda: parent.show_frame(Page_0))
         setting_button.image = setting_icon
         setting_button.place(relx=0, rely=0, anchor='nw', x=10, y=10)
+        setting_button_tooltip = ToolTip(setting_button, "設定") 
+
+        #発注書変更ボタン
+        sheet_icon = tk.PhotoImage(file="setup/sheet_icon.png").subsample(2,2)
+        sheet_button = tk.Button(self, image=sheet_icon, compound="top", command=lambda: self.open_original_sheet(parent))
+        sheet_button.image = sheet_icon
+        sheet_button.place(relx=0, rely=0, anchor='nw', x=41, y=10)
+        sheet_button_tooltip = ToolTip(sheet_button, "発注書[原本]を編集") 
+
         parent.attributes("-topmost", True)
         parent.attributes("-topmost", False)
         # 本日の日付を取得 as YYYY-MM-DD
@@ -344,7 +418,7 @@ class Page_1(Text_and_Button_Page):
             self.button1.config(text="発注を中止", command=parent.quit)
         if parent.today_real_int:
             parent.today_str_csv = parent.today_real_int.strftime('%Y%m%d')
-        self.bind_all('<Control-m>', lambda e: self.place_entry(parent)) #開発用、任意の時刻を設定するコマンド
+        self.bind_all('<Control-t>', lambda e: self.place_entry(parent)) #開発用、任意の時刻を設定するコマンド
 
     def place_entry(self,parent):
         self.label1.config(text="日時を 'YYYY-MM-DD HH:MM:SS' 形式で入力してください")
@@ -360,16 +434,21 @@ class Page_1(Text_and_Button_Page):
         with freeze_time(dt):
             # 固定された現在時刻を表示
             print("固定された現在時刻: ", datetime.now())
-            parent.show_frame(Page_1)     
+            parent.show_frame(Page_1) 
+
+    def open_original_sheet(self, parent):
+            original_sheet_url = parent.handler.get_original_sheet()
+            webbrowser.open(original_sheet_url)
 
 class Page_2(Text_and_Button_Page):
     def __init__(self, parent):
         super().__init__(parent)
 
         self.label1.config(text='発注が完了するまでこのウィンドウは閉じないでください。')
-        parent.today_order_file = f'発注書_{parent.today_str}.xlsx' 
-        if os.path.exists(parent.today_order_file): 
-            self.button1.config(text="OK", command=lambda: parent.show_frame(Page_3))
+        parent.today_order_file = f'発注書_{parent.today_str}' 
+        parent.sheet_id, parent.sheet_url = parent.handler.check_existing_sheet(parent.today_order_file)
+        if parent.sheet_id: 
+            self.button1.config(text="OK", command=lambda: parent.show_frame(Page_3))            
         else:
             self.button1.config(text="OK", command=lambda: parent.show_frame(Page_4))
 
@@ -393,32 +472,9 @@ class Page_4(Progress_Page): #発注書作成
     def setup_form(self, parent):
         download_success = False 
         if parent.night_order == True:
-            download_success = parent.handler.download_csv(parent.today_real_int, parent.today_str_csv)
+            download_success = parent.handler.download_csv(parent.today_str_csv, parent.today_int)
         if download_success or (parent.night_order == False):
-            parent.spread_url = parent.handler.generate_form(parent.delivery_date_int, parent.today_str_csv, parent.yesterday_str, parent.today_str, parent.night_order)
-            # QRコードの生成
-            qr = qrcode.QRCode(
-                version=1,
-                error_correction=qrcode.constants.ERROR_CORRECT_L,
-                box_size=10,
-                border=4,
-            )
-            qr.add_data(parent.spread_url)
-            qr.make(fit=True)
-
-            # QRコードの画像を生成
-            img = qr.make_image(fill_color="black", back_color="white").convert("RGBA")
-            # 画像の背景を透明に変更
-            data = img.getdata()
-            new_data = []
-            for item in data:
-                # 白いピクセルを透明に設定
-                if item[:3] == (255, 255, 255):
-                    new_data.append((255, 255, 255, 0))
-                else:
-                    new_data.append(item)
-            img.putdata(new_data)
-            parent.qr_img = ImageTk.PhotoImage(img)
+            parent.sheet_id, parent.sheet_url = parent.handler.generate_form(parent.delivery_date_int, parent.today_str_csv, parent.yesterday_str, parent.today_str, parent.night_order)
             self.progress.stop()
             parent.show_frame(Page_6)
         else:
@@ -433,7 +489,7 @@ class Page_5(Text_and_Button_Page): #発注明細ダウンロード失敗
         self.button1.config(text="ダウンロードした", command=lambda: self.check_download(parent))        
 
     def check_download(self, parent): 
-        if os.path.exists(f'{st.DOWNLOAD_DIR}/{parent.today_str_csv}_発注.CSV'):
+        if os.path.exists(f'{parent.handler.download_folder_path()}/{parent.today_str_csv}_発注.CSV'):
             parent.show_frame(Page_4)
         else :
             parent.show_frame(Page_5)
@@ -442,10 +498,12 @@ class Page_6(Text_and_Button_Page): #発注書生成完了&入力確認
     def __init__(self, parent):
         super().__init__(parent)
         parent.attributes("-topmost", False)
-        self.label1.config(text="発注書が作成されました。タブレットで本日の発注書に現在庫数を入力してください。") 
-        self.button1.pack_forget()
-        label_qr = tk.Label(self, image=parent.qr_img)
+        self.label1.config(text="発注書が作成されました。タブレットでQRコードを読み込み、現在庫数を入力してください。") 
+        self.label1.pack(pady=(50,10))
+        self.qr_img = self.make_qr(parent.sheet_url)
+        label_qr = tk.Label(self, image=self.qr_img)
         label_qr.pack()
+        self.button1.pack_forget()
         self.button1 = tk.Button(self, text="入力完了", command=lambda:self.confirm_filling(parent))
         self.button1.pack()
     
@@ -453,7 +511,35 @@ class Page_6(Text_and_Button_Page): #発注書生成完了&入力確認
         self.label1.config(text="タブレットで現在庫数をすべて入力しましたか？")
         self.button1.config(text="はい", command=lambda: parent.show_frame(Page_7))
 
-class Page_7(Progress_Page): #同期確認
+    def make_qr(self, url):
+        # QRコードの生成
+        print(url)
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=3.5,
+            border=3,
+        )
+        qr.add_data(url)
+        qr.make(fit=True)
+
+        # QRコードの画像を生成
+        img = qr.make_image(fill_color="black", back_color="white").convert("RGBA")
+        # 画像の背景を透明に変更
+        data = img.getdata()
+        new_data = []
+        for item in data:
+            # 白いピクセルを透明に設定
+            if item[:3] == (255, 255, 255):
+                new_data.append((255, 255, 255, 0))
+            else:
+                new_data.append(item)
+        img.putdata(new_data)
+        qr_img = ImageTk.PhotoImage(img)
+        return qr_img
+
+
+class Page_7(Progress_Page): #発注数取得・入力
     def __init__(self, parent):
         super().__init__(parent)
         self.label_p.config(text="発注書からデータを取得しています...")
@@ -463,7 +549,7 @@ class Page_7(Progress_Page): #同期確認
         threading.Thread(target=thread_with_error_handle, args=(self.confirm_googledive_sinch, parent,),daemon=True).start()
 
     def confirm_googledive_sinch(self, parent):
-        NaN_ls = parent.handler.get_spreadsheet(parent.today_str) #戻り値は現在庫が入力されてない商品名のリスト           
+        NaN_ls = parent.handler.get_spreadsheet(parent.sheet_id) #戻り値は現在庫が入力されてない商品名のリスト           
         if NaN_ls is False:
             self.progress.stop()
             self.progress.pack_forget()
@@ -473,7 +559,7 @@ class Page_7(Progress_Page): #同期確認
         elif len(NaN_ls) == 0:
             self.label_p.config(text="EOSへ発注数を入力中...")
             parent.attributes("-topmost", True)
-            input_order_success, parent.error_ls = parent.handler.input_order_in_site(parent.today_order_file)
+            input_order_success, parent.error_ls = parent.handler.input_order_in_site()
             self.progress.stop()
             if input_order_success: 
                 parent.show_frame(Page_8)         
@@ -514,13 +600,9 @@ class Page_8(List_Page):
         self.scroll_x.pack_forget()
         self.listbox_frame.pack_forget()
         todo_list = []
-        if parent.today_int.weekday() in {1, 3, 5}: #本日が火・木・土の場合
-            todo_list.append('EOSで「発注手続きへ」をクリックして、発注確定する。')
-            todo_list.append('今日は非食品の発注日です。非食品の発注数を入力して、再度発注確定を行い、印刷する。')
-        else:
-            todo_list.append('EOSで「発注手続きへ」をクリックして、発注確定・印刷する。')
+        todo_list.append('EOSで「発注手続きへ」をクリックして、発注確定・印刷する。')
 
-        if st.SHOP_NAME in {"自由が丘メープル通り", "岩佐Surface"}:
+        if st['SHOP_NAME'] in {"自由が丘メープル通り", "岩佐Surface"}:
             todo_list.append('たまごを忘れず発注する。')
         todo_list.append('発注が終了したら、右上の✕ボタンで終了してください。')
 
@@ -530,7 +612,7 @@ class Page_8(List_Page):
 
         if parent.today_int.weekday() in {1, 3, 5}: #本日が火・木・土の場合
             try:
-                print_seccess = parent.handler.print_excel(parent.today_order_file, '非食品', st.PRINTER_NAME)
+                print_seccess = parent.handler.print_excel(parent.today_order_file, '非食品', st['PRINTER_NAME'])
                 if print_seccess is False:
                     raise Exception
             except:
