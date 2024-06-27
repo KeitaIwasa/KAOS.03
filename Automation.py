@@ -321,7 +321,11 @@ class AutomationHandler:
             # '発注数'がNaNまたは0の行を削除
             input_df_nonfood = input_df_nonfood.dropna(subset=['発注数'])
             input_df_nonfood = input_df_nonfood[input_df_nonfood['発注数'] != 0]
-            self.input_df_nonfood = input_df_nonfood.reset_index(drop=True, inplace=True)
+            # 行数が0の場合はNoneに設定
+            if input_df_nonfood.shape[0] == 0: 
+                self.input_df_nonfood = None
+            else:
+                self.input_df_nonfood = input_df_nonfood.reset_index(drop=True, inplace=True)
             return Name_with_NaN
             
     def input_order_in_site(self):
@@ -335,7 +339,7 @@ class AutomationHandler:
         input_order = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//a[@accesskey='3']")))
         input_order.click()
 
-        #if os.path.exists(st.WIN32COM_GEN_PY_DIR):
+        #if os.path.exists(st.WIN32COM_GEN_poPY_DIR):
         #    shutil.rmtree(st.WIN32COM_GEN_PY_DIR) # win32comのキャッシュをフォルダごと削除（これをしないとエラーが起こる）
         
         WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'scode'))) 
@@ -362,8 +366,8 @@ class AutomationHandler:
         excel_data = self.input_df #Pandasで発注書Excel読み込み
         dict_data = pd.Series(excel_data['商品名'].values, index=excel_data['商品コード'].values) #商品名：商品コードの辞書作成
 
-        # 入力
-        for index, row in self.input_df.iterrows():
+        # 食品入力
+        for row in self.input_df.itertuples():
             if row['発注数'] <= 0:
                 continue
             else:
@@ -400,7 +404,17 @@ class AutomationHandler:
                     input_field.send_keys(order_value) #発注数を入力
 
                 former_table_id = table_id
-                former_input_number = row['商品コード']                  
+                former_input_number = row['商品コード']   
+
+        # 非食品入力
+        if self.input_df_nonfood == None:
+            pass
+        else:
+            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, table_id)))
+            for row in self.input_df_nonfood.itertuples():
+                if row['発注数'] <= 0:
+                    continue
+
         if len(error_ls) > 0 :    
             for i in range(len(error_ls)):
                 print(f'\033[93m{error_ls[i]}\033[0m')
