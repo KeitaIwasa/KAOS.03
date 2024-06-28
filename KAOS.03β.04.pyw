@@ -16,9 +16,8 @@ import urllib.parse
 import shutil
 import configparser
 import win32print
-import qrcode
-from PIL import Image, ImageTk
 import webbrowser
+# installが必要なモジュールは下に書く
 
 try:
     from plyer import notification
@@ -47,7 +46,10 @@ for requirement in requirements:
         subprocess.check_call([sys.executable, "-m", "pip", "install", requirement.strip()])
 #---------------------------------------------------------------------------------------------------
 
+# installが必要なモジュールはここに書く
 from freezegun import freeze_time
+import qrcode
+from PIL import Image, ImageTk
 
 # 設定ファイルの読み込み
 if not os.path.exists('config.ini'):
