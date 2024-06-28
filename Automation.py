@@ -361,9 +361,7 @@ class AutomationHandler:
             input_df_nonfood = input_df_nonfood.dropna(subset=['発注数'])
             input_df_nonfood = input_df_nonfood[input_df_nonfood['発注数'] != 0]
             # 行数が0の場合はFalseに設定
-            if input_df_nonfood.shape[0] == 0: 
-                self.input_df_nonfood = False
-            else:
+            if not input_df_nonfood.shape[0] == 0: 
                 self.input_df_nonfood = input_df_nonfood.reset_index(drop=True)
                 self.input_df_nonfood.replace('', np.nan, inplace=True)
                 self.input_df_nonfood['商品コード'] = self.input_df_nonfood['商品コード'].astype(int)
@@ -468,35 +466,6 @@ class AutomationHandler:
             for i in range(len(error_ls)):
                 print(f'\033[93m{error_ls[i]}\033[0m')
         return True, error_ls
-
-    def print_excel(self, file_path, sheet_name, printer_name):
-        wb = openpyxl.load_workbook(file_path)
-        wsall = wb.sheetnames
-        for s in wsall:
-            #各シートをfor文で渡して
-            ws = wb[s]
-            #それらについて、すべてtablesectedプロパティをFalseにする
-            ws.sheet_view.tabSelected = False
-        ws = wb[sheet_name]
-        ws.sheet_view.tabSelected = True
-        wb.active = ws
-        wb.save(file_path)
-        wb.close()
-        try:
-            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows NT\CurrentVersion\Windows', 0, winreg.KEY_SET_VALUE)
-            winreg.SetValueEx(key, "LegacyDefaultPrinterMode", 0, winreg.REG_DWORD, 1)
-            winreg.CloseKey(key)
-            print("「Windowsで通常使うプリンターを管理する」設定がOFFにされました。")
-        except Exception as e:
-            print(f"レジストリの編集中にエラーが発生しました: {e}")
-        
-        try:
-            win32print.SetDefaultPrinter(printer_name)
-            win32api.ShellExecute(0, "print", file_path, None, ".", 0)
-            return True
-        except:
-            os.startfile(file_path)
-            return False
 
     def destroy_chrome(self):
         try:

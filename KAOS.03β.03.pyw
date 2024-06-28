@@ -573,7 +573,7 @@ class Page_7(Progress_Page): #発注数取得・入力
             self.label_p.config(text='データの取得に失敗しました。') 
             self.button2 = tk.Button(self, text="再試行", command=lambda: parent.show_frame(Page_7))     
             self.button2.pack()
-        elif df_nonfood == False and parent.today_int.weekday() in {1, 3, 5} and parent.nonfood0_ok == False:
+        elif df_nonfood.shape[0] == 0 and parent.today_int.weekday() in {1, 3, 5} and parent.nonfood0_ok == False:
             self.progress.stop()
             self.progress.pack_forget()
             parent.show_frame(Page_7ii)
@@ -642,14 +642,6 @@ class Page_8(List_Page):
         text = "\n".join(f"{index + 1}. {todo}" for index, todo in enumerate(todo_list))
         label_todo = tk.Label(self, text=text, justify='left', width=300)
         label_todo.pack(pady=20, padx=30)
-
-        if parent.today_int.weekday() in {1, 3, 5}: #本日が火・木・土の場合
-            try:
-                print_seccess = parent.handler.print_excel(parent.today_order_file, '非食品', st['PRINTER_NAME'])
-                if print_seccess is False:
-                    raise Exception
-            except:
-                messagebox.showwarning("印刷失敗", "非食品の発注書の印刷に失敗しました。ファイルを開いて手動で印刷してください。")
 
 def hide_files():
     """    
