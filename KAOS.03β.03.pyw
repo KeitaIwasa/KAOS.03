@@ -522,6 +522,7 @@ class Page_6(Text_and_Button_Page): #発注書生成完了&入力確認
         self.button1.pack_forget()
         self.button1 = tk.Button(self, text="入力完了", command=lambda:self.confirm_filling(parent))
         self.button1.pack()
+        parent.nonfood0_ok = False
     
     def confirm_filling(self, parent):
         self.label1.config(text="タブレットで現在庫数をすべて入力しましたか？")
@@ -565,13 +566,18 @@ class Page_7(Progress_Page): #発注数取得・入力
         threading.Thread(target=thread_with_error_handle, args=(self.confirm_googledive_sinch, parent,),daemon=True).start()
 
     def confirm_googledive_sinch(self, parent):
-        NaN_ls = parent.handler.get_spreadsheet(parent.sheet_id) #戻り値は現在庫が入力されてない商品名のリスト           
+        NaN_ls, df_nonfood = parent.handler.get_spreadsheet(parent.sheet_id) #戻り値は現在庫が入力されてない商品名のリストと非食品のdf          
         if NaN_ls is False:
             self.progress.stop()
             self.progress.pack_forget()
             self.label_p.config(text='データの取得に失敗しました。') 
             self.button2 = tk.Button(self, text="再試行", command=lambda: parent.show_frame(Page_7))     
             self.button2.pack()
+        elif df_nonfood.shape[0] == 0 and parent.today_int.weekday() in {1, 3, 5} and parent.nonfood0_ok == False:
+            self.progress.stop()
+            self.progress.pack_forget()
+            parent.show_frame(Page_7ii)
+            
         elif len(NaN_ls) == 0:
             self.label_p.config(text="EOSへ発注数を入力中...")
             parent.attributes("-topmost", True)
@@ -591,6 +597,17 @@ class Page_7i(List_Page):
         for value in parent.NaN_ls:
                 self.listbox.insert(tk.END, value)
         self.button_l.config(text="発注書を確認した", command=lambda: parent.show_frame(Page_7))
+
+class Page_7ii(Text_and_2Buttons_Page): # 非食品が未入力
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.label2.config(text='今日は非食品の発注日です。非食品の発注数がすべて0になっていますが、非食品は発注しなくてよろしいですか？')
+        self.button_L.config(text='再試行', command=lambda:parent.show_frame(Page_7))
+        self.button_R.config(text='非食品は発注しない', command=lambda:self.nonfood0_ok(parent))
+    
+    def nonfood0_ok(self, parent):
+        parent.nonfood0_ok = True
+        parent.show_frame(Page_7)
 
 class Page_8(List_Page):
     def __init__(self, parent):
@@ -625,14 +642,6 @@ class Page_8(List_Page):
         text = "\n".join(f"{index + 1}. {todo}" for index, todo in enumerate(todo_list))
         label_todo = tk.Label(self, text=text, justify='left', width=300)
         label_todo.pack(pady=20, padx=30)
-
-        if parent.today_int.weekday() in {1, 3, 5}: #本日が火・木・土の場合
-            try:
-                print_seccess = parent.handler.print_excel(parent.today_order_file, '非食品', st['PRINTER_NAME'])
-                if print_seccess is False:
-                    raise Exception
-            except:
-                messagebox.showwarning("印刷失敗", "非食品の発注書の印刷に失敗しました。ファイルを開いて手動で印刷してください。")
 
 def hide_files():
     """    
