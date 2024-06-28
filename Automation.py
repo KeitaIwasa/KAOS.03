@@ -334,7 +334,7 @@ class AutomationHandler:
         # 指定した複数の列をDataFrameに変換
         if not values_food:
             print('No data found in the sheet.')
-            return False
+            return False, False
         else:
             #食品
             max_columns = len(values_food[0])
@@ -360,16 +360,16 @@ class AutomationHandler:
             # '発注数'がNaNまたは0の行を削除
             input_df_nonfood = input_df_nonfood.dropna(subset=['発注数'])
             input_df_nonfood = input_df_nonfood[input_df_nonfood['発注数'] != 0]
-            # 行数が0の場合はNoneに設定
+            # 行数が0の場合はFalseに設定
             if input_df_nonfood.shape[0] == 0: 
-                self.input_df_nonfood = None
+                self.input_df_nonfood = False
             else:
                 self.input_df_nonfood = input_df_nonfood.reset_index(drop=True)
                 self.input_df_nonfood.replace('', np.nan, inplace=True)
                 self.input_df_nonfood['商品コード'] = self.input_df_nonfood['商品コード'].astype(int)
                 self.input_df_nonfood['発注数'] = self.input_df_nonfood['発注数'].astype(int)
             
-            return Name_with_NaN
+            return Name_with_NaN, self.input_df_nonfood
             
     def input_order_in_site(self):
         self.login_eos(st['EOS_ID'], st['EOS_PW'])
@@ -391,8 +391,8 @@ class AutomationHandler:
         for df in input_df_tuple:
             if df is self.input_df:
                 print(f'df is self.input')
-            elif df is None:
-                print(f'df is None')
+            elif df is False:
+                print(f'df is False')
                 continue
             else:
                 print(f'df is else')
