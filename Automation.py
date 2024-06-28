@@ -88,7 +88,7 @@ class AutomationHandler:
     def get_original_sheet(self):
         drive_service = build('drive', 'v3', credentials=creds)
         sheet_name = f'発注書【原本】_{st["SHOP_NAME"]}'
-        query = f"'{st['SHOP_FOLDER_ID']}' in parents and name contains '{sheet_name}' and trashed = false and mimeType='application/vnd.google-apps.spreadsheet'"
+        query = f"'{st['SHOP_FOLDER_ID']}' in parents and name = '{sheet_name}' and trashed = false and mimeType='application/vnd.google-apps.spreadsheet'"
         results = drive_service.files().list(
             q=query,
             fields='files(id, name)').execute()
@@ -296,29 +296,30 @@ class AutomationHandler:
             'function': 'generateForm',
             'parameters': [delivery_date_int.isoformat(), csv_id, today_str, night_order, st['SHOP_NAME']]
         }
-        #try:
-        response = script_service.scripts().run(body=request, scriptId=script_id).execute()
-        #発注明細csvをローカルから削除
+        try:
+            response = script_service.scripts().run(body=request, scriptId=script_id).execute()
+            #発注明細csvをローカルから削除
+            #response = self.execute_with_retry(script_service, request, script_id, retries=5)
+            if 'error' in response:
+                # エラーハンドリング
+                error_message = 'Error: {}'.format(response['error']['details'])
+                print(error_message)
+                raise Exception(error_message)
+            else:
+                # デバッグ情報を出力
+                debug_info_json = response['response'].get('result')
+                debug_info = json.loads(debug_info_json)
+                print('Debug Info:', debug_info)
 
-        #response = self.execute_with_retry(script_service, request, script_id, retries=5)
-        if 'error' in response:
-            # エラーハンドリング
-            print('Error: {}'.format(response['error']['details']))
-        else:
-            # デバッグ情報を出力
-            debug_info_json = response['response'].get('result')
-            debug_info = json.loads(debug_info_json)
-            print('Debug Info:', debug_info)
+                self.new_spreadsheet_id = debug_info.get('spreadsheetId')
+                print('New Spreadsheet ID: {}'.format(self.new_spreadsheet_id))
 
-            self.new_spreadsheet_id = debug_info.get('spreadsheetId')
-            print('New Spreadsheet ID: {}'.format(self.new_spreadsheet_id))
-
-            spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{self.new_spreadsheet_id}/edit" 
-            
-            return self.new_spreadsheet_id, spreadsheet_url
-        #except Exception as e:
-        #    print(f"Failed to execute the script: {e}")
-        #    return False
+                spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{self.new_spreadsheet_id}/edit" 
+                
+                return self.new_spreadsheet_id, spreadsheet_url
+        except Exception as e:
+            print(f"Failed to execute the script: {e}")
+            raise Exception(e)
 
     def get_spreadsheet(self, sheet_id):
         sheets_service = build('sheets', 'v4', credentials=creds)

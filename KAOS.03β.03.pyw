@@ -85,7 +85,7 @@ def send_line_notify(message):
     response = conn.getresponse()
     print(response.status, response.reason)
 
-def handle_exception(exc):
+def handle_exception(exc, message=False):
     print(exc)
     global error_occurred
     global log_file
@@ -105,8 +105,10 @@ def handle_exception(exc):
         send_line_notify(notify_message)
     except Exception as e:
         print(f"Failed send line notify:{e}")
-    messagebox.showerror("Error", "予期せぬエラーが発生しました。\nアプリを再起動してください。\n問題が解決しない場合は岩佐に連絡してください。")
-
+    if message is False:
+        messagebox.showerror("Error", "予期せぬエラーが発生しました。\nアプリを再起動してください。\n問題が解決しない場合は岩佐に連絡してください。")
+    else:
+        messagebox.showerror("Error", message)
 def thread_with_error_handle(target, *args, **kwargs):
     try:
         target(*args, **kwargs)
@@ -437,8 +439,14 @@ class Page_1(Text_and_Button_Page):
             parent.show_frame(Page_1) 
 
     def open_original_sheet(self, parent):
+        try:
             original_sheet_url = parent.handler.get_original_sheet()
-            webbrowser.open(original_sheet_url)
+            if original_sheet_url == False:
+                raise Exception("Original sheet not found")
+            else:
+                webbrowser.open(original_sheet_url)
+        except Exception as e:
+            handle_exception(e, message="発注書の原本が見つかりません。「お問い合わせ」から担当者に連絡してください。")
 
 class Page_2(Text_and_Button_Page):
     def __init__(self, parent):
@@ -448,10 +456,10 @@ class Page_2(Text_and_Button_Page):
         parent.today_order_file = f'発注書_{parent.today_str}' 
         check_result = parent.handler.check_existing_sheet(parent.today_order_file)
         if check_result == False:
-            parent.sheet_id, parent.sheet_url = None, None
+            parent.sheet_id, parent.sheet_url = False, False
         else:
             parent.sheet_id, parent.sheet_url = check_result
-        if parent.sheet_id: 
+        if parent.sheet_id and parent.sheet_url: 
             self.button1.config(text="OK", command=lambda: parent.show_frame(Page_3))            
         else:
             self.button1.config(text="OK", command=lambda: parent.show_frame(Page_4))
@@ -478,7 +486,11 @@ class Page_4(Progress_Page): #発注書作成
         if parent.night_order == True:
             download_success = parent.handler.download_csv(parent.today_str_csv, parent.today_int)
         if download_success or (parent.night_order == False):
-            parent.sheet_id, parent.sheet_url = parent.handler.generate_form(parent.delivery_date_int, parent.today_str_csv, parent.yesterday_str, parent.today_str, parent.night_order)
+            generate_result = parent.handler.generate_form(parent.delivery_date_int, parent.today_str_csv, parent.yesterday_str, parent.today_str, parent.night_order)
+            if generate_result == False:
+                raise Exception
+            else:
+                parent.sheet_id, parent.sheet_url = generate_result
             self.progress.stop()
             parent.show_frame(Page_6)
         else:
