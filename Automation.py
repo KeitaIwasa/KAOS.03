@@ -366,6 +366,8 @@ class AutomationHandler:
                 self.input_df_nonfood.replace('', np.nan, inplace=True)
                 self.input_df_nonfood['商品コード'] = self.input_df_nonfood['商品コード'].astype(int)
                 self.input_df_nonfood['発注数'] = self.input_df_nonfood['発注数'].astype(int)
+            else:
+                self.input_df_nonfood = input_df_nonfood
             
             return Name_with_NaN, self.input_df_nonfood
             
