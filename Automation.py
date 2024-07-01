@@ -391,7 +391,7 @@ class AutomationHandler:
         for df in input_df_tuple:
             if df is self.input_df:
                 print(f'df is self.input')
-            elif df is False:
+            elif df.shape[0] == 0:
                 print(f'df is False')
                 continue
             else:
