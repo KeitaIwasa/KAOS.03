@@ -1,4 +1,8 @@
 # © 2024 Keita Iwasa
+import time
+time_list = []
+t = time.time()
+time_list.append(t)
 
 from datetime import datetime, timedelta
 import tkinter as tk
@@ -18,6 +22,9 @@ import configparser
 import win32print
 import webbrowser
 # installが必要なモジュールは下に書く
+t = time.time()
+time_list.append(t)
+print(f'{len(time_list)-1}:{time_list[-1]-time_list[-2]}')
 
 try:
     from plyer import notification
@@ -51,6 +58,10 @@ from freezegun import freeze_time
 import qrcode
 from PIL import Image, ImageTk
 
+t = time.time()
+time_list.append(t)
+print(f'{len(time_list)-1}:{time_list[-1]-time_list[-2]}')
+
 # 設定ファイルの読み込み
 if not os.path.exists('config.ini'):
     timestamp = datetime.now()
@@ -69,8 +80,15 @@ with open('config.ini', 'r', encoding='utf-8') as file:
     config.read_file(file)
 st = config['Settings']
 
+t = time.time()
+time_list.append(t)
+print(f'{len(time_list)-1}:{time_list[-1]-time_list[-2]}')
 
 from Automation import AutomationHandler
+
+t = time.time()
+time_list.append(t)
+print(f'{len(time_list)-1}:{time_list[-1]-time_list[-2]}')
 
 # Error handling ---------------------------------------------------
 error_occurred = False
