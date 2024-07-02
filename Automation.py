@@ -9,21 +9,12 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 
 import time
-import random
-import shutil
 import os
-from openpyxl import Workbook,load_workbook
-from openpyxl.worksheet.worksheet import Worksheet
-from openpyxl.styles import PatternFill
+from openpyxl import load_workbook
 import pandas as pd
 import numpy as np
-import glob
-import win32api
-import win32print
-import openpyxl
 import winreg
 import configparser
-import qrcode
 import httplib2
 import json
 from datetime import datetime, timedelta
@@ -52,6 +43,7 @@ class AutomationHandler:
         global creds
         creds = Credentials.from_authorized_user_file(token_path, SCOPES)
         if not creds.valid:
+            print('not creds.valid')
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
             else:
