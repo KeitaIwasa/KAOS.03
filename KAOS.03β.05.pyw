@@ -10,46 +10,25 @@ import socket
 import logging
 import subprocess
 import sys
-import pkg_resources
 import http.client
 import urllib.parse
-import shutil
 import configparser
 import win32print
 import webbrowser
-# installが必要なモジュールは下に書く
-
-try:
-    from plyer import notification
-    plyer_installed = True
-except:
-    pass
-    plyer_installed = False
-# install required library---------------------------------------------------------------------------
-with open('setup/requirements.txt', 'r') as file:
-        requirements = file.readlines()
-installing_library = False
-for requirement in requirements:
-    try:
-        pkg_resources.require(requirement)
-    except (pkg_resources.DistributionNotFound, pkg_resources.VersionConflict):
-        if installing_library is False and plyer_installed:
-            installing_library = True
-            notification.notify(
-                app_name = "KAOS",
-                app_icon = "setup/KAOS_icon.ico",
-                title = "KAOS",
-                message="\n自動発注システムをアップデートしています。少々お待ちください。",
-                timeout=5
-            )
-        print(f'installing {requirement}...')
-        subprocess.check_call([sys.executable, "-m", "pip", "install", requirement.strip()])
-#---------------------------------------------------------------------------------------------------
-
-# installが必要なモジュールはここに書く
 from freezegun import freeze_time
 import qrcode
 from PIL import Image, ImageTk
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+# Example usage
+icon_path = resource_path('setup/KAOS_icon.ico')
+config_path = resource_path('config.ini')
 
 # 設定ファイルの読み込み
 if not os.path.exists('config.ini'):
