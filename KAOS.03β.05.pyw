@@ -603,7 +603,7 @@ class Page_7i(List_Page):
 class Page_7ii(Text_and_2Buttons_Page): # 非食品が未入力
     def __init__(self, parent):
         super().__init__(parent)
-        self.label2.config(text='今日は非食品の発注日です。非食品の発注数がすべて0になっていますが、非食品は発注しなくてよろしいですか？')
+        self.label2.config(text='今日は非食品の発注日です。非食品の現在庫数がすべて空欄になっていますが、非食品は発注しなくてよろしいですか？')
         self.button_L.config(text='再試行', command=lambda:parent.show_frame(Page_7))
         self.button_R.config(text='非食品は発注しない', command=lambda:self.nonfood0_ok(parent))
     
