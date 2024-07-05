@@ -31,7 +31,7 @@ icon_path = resource_path('setup/KAOS_icon.ico')
 config_path = resource_path('config.ini')
 
 # 設定ファイルの読み込み
-if not os.path.exists('config.ini'):
+if not os.path.exists(config_path):
     timestamp = datetime.now()
     file_content = f""";{timestamp}
 [Settings]
@@ -41,10 +41,10 @@ EOS_ID =
 EOS_PW = 
 PRINTER_NAME = 
 """
-    with open('config.ini', "w", encoding="utf-8") as file:
+    with open(config_path, "w", encoding="utf-8") as file:
         file.write(file_content)
 config = configparser.ConfigParser()
-with open('config.ini', 'r', encoding='utf-8') as file:
+with open(config_path, 'r', encoding='utf-8') as file:
     config.read_file(file)
 st = config['Settings']
 
