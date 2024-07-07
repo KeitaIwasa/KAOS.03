@@ -27,7 +27,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 
 # 設定ファイルの読み込み
 config = configparser.ConfigParser()
-with open('config.ini', 'r', encoding='utf-8') as file:
+with open('setup/config.ini', 'r', encoding='utf-8') as file:
     config.read_file(file)
 st = config['Settings'] 
 
@@ -39,7 +39,7 @@ class AutomationHandler:
             'https://www.googleapis.com/auth/script.projects',
             'https://www.googleapis.com/auth/calendar.readonly'
         ]
-        token_path = 'setup/token.json'
+        token_path = r'setup/token.json' # rを入れないとPermission Erorrになる
         global creds
         creds = Credentials.from_authorized_user_file(token_path, SCOPES)
         if not creds.valid:
@@ -48,11 +48,9 @@ class AutomationHandler:
                 creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
-                    'credentials.json', SCOPES)
+                    r'setup/credentials.json', SCOPES)
                 creds = flow.run_local_server(port=0)
             # Save the credentials for the next run
-            if not os.access(token_path, os.W_OK):
-                os.chmod(token_path, 0o666)
             with open(token_path, 'w') as token:
                 token.write(creds.to_json())
         self.driver = None

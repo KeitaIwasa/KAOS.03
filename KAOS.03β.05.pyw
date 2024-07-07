@@ -26,12 +26,8 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
-# Example usage
-icon_path = resource_path('setup/KAOS_icon.ico')
-config_path = resource_path('config.ini')
-
 # 設定ファイルの読み込み
-if not os.path.exists(config_path):
+if not os.path.exists(r'setup/config.ini'):
     timestamp = datetime.now()
     file_content = f""";{timestamp}
 [Settings]
@@ -41,10 +37,10 @@ EOS_ID =
 EOS_PW = 
 PRINTER_NAME = 
 """
-    with open(config_path, "w", encoding="utf-8") as file:
+    with open(r'setup/config.ini', "w", encoding="utf-8") as file:
         file.write(file_content)
 config = configparser.ConfigParser()
-with open(config_path, 'r', encoding='utf-8') as file:
+with open(r'setup/config.ini', 'r', encoding='utf-8') as file:
     config.read_file(file)
 st = config['Settings']
 
@@ -110,7 +106,7 @@ class MainApplication(tk.Tk):
     def show_qr(self):
         qr_window = tk.Toplevel()
         qr_window.title("お問い合わせ用QRコード")
-        photo = tk.PhotoImage(file="setup\岩佐LINEのQR.png")
+        photo = tk.PhotoImage(file=resource_path('setup/岩佐LINEのQR.png'))
         # 画像を表示するためのラベルウィジェットを作成
         label = tk.Label(qr_window, image=photo)
         label.image = photo  # 参照を保持
@@ -143,7 +139,7 @@ class MainApplication(tk.Tk):
         self.title("コメダ自動発注システム KAOS")
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.center_window(self, 600, 300)
-        self.iconbitmap('setup\KAOS_icon.ico')
+        self.iconbitmap(resource_path('setup/KAOS_icon.ico'))
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.frames = {}
@@ -343,7 +339,7 @@ EOS_PW = {eos_password}
 PRINTER_NAME = {printer}
 SHOP_FOLDER_ID = {shop_folder_id}
         """        
-                file_name = "config.ini"
+                file_name = r"setup/config.ini"
                 # ファイルを作成して内容を書き込みます
                 if os.path.exists(file_name):
                     os.remove(file_name)
@@ -359,14 +355,14 @@ class Page_1(Text_and_Button_Page):
     def __init__(self, parent):
         super().__init__(parent)
         #設定ボタン
-        setting_icon = tk.PhotoImage(file="setup/setting_icon.png").subsample(2,2)
+        setting_icon = tk.PhotoImage(file=resource_path('setup/setting_icon.png')).subsample(2,2)
         setting_button = tk.Button(self, image=setting_icon, compound="top", command=lambda: parent.show_frame(Page_0))
         setting_button.image = setting_icon
         setting_button.place(relx=0, rely=0, anchor='nw', x=10, y=10)
         setting_button_tooltip = ToolTip(setting_button, "設定") 
 
         #発注書変更ボタン
-        sheet_icon = tk.PhotoImage(file="setup/sheet_icon.png").subsample(2,2)
+        sheet_icon = tk.PhotoImage(file=resource_path('setup/sheet_icon.png')).subsample(2,2)
         sheet_button = tk.Button(self, image=sheet_icon, compound="top", command=lambda: self.open_original_sheet(parent))
         sheet_button.image = sheet_icon
         sheet_button.place(relx=0, rely=0, anchor='nw', x=41, y=10)
