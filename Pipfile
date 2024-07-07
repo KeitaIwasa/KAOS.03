@@ -4,6 +4,24 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+selenium = "*"
+pandas = "*"
+openpyxl = "*"
+pywin32 = "*"
+jpholiday = "*"
+google-auth-oauthlib = "*"
+google-auth = "*"
+google-api-python-client = "*"
+google-auth-httplib2 = "*"
+freezegun = "*"
+webdriver-manager = "*"
+plyer = "*"
+qrcode = "*"
+pillow = "*"
+chardet = "*"
+charset-normalizer = "*"
+requests = "*"
+idna = "*"
 
 [dev-packages]
 
