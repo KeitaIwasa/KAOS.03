@@ -578,7 +578,7 @@ class Page_7i(List_Page):
 class Page_7ii(Text_and_2Buttons_Page): # 非食品が未入力
     def __init__(self, parent):
         super().__init__(parent)
-        self.label2.config(text='今日は非食品の発注日です。非食品の発注数がすべて0になっていますが、非食品は発注しなくてよろしいですか？')
+        self.label2.config(text='今日は非食品の発注日です。非食品の現在庫が入力されていませんが、非食品は発注しなくてよろしいですか？発注する場合は、発注書に現在庫を入力してから「再試行」をクリックしてください。')
         self.button_L.config(text='再試行', command=lambda:parent.show_frame(Page_7))
         self.button_R.config(text='非食品は発注しない', command=lambda:self.nonfood0_ok(parent))
     
@@ -620,30 +620,10 @@ class Page_8(List_Page):
         label_todo = tk.Label(self, text=text, justify='left', width=300)
         label_todo.pack(pady=20, padx=30)
 
-def hide_files():
-    """    
-    directory (str): 操作対象のディレクトリ
-    exclude_files (list): 除外するファイルのリスト
-    exclude_dirs (list): 除外するディレクトリのリスト
-    """
-    directory = os.path.dirname(os.path.abspath(__file__))  # スクリプトが含まれるディレクトリ
-    exclude_files = [os.path.basename(__file__)] + [f for f in os.listdir(directory) if f.endswith('.xlsx') or f.endswith('.xls')]
-    exclude_dirs = ['発注書Excel']
-
-    for item in os.listdir(directory):
-        item_path = os.path.join(directory, item)
-        # ファイルが除外リストにない場合
-        if os.path.isfile(item_path) and item not in exclude_files:
-            subprocess.run(['attrib', '+h', item_path], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        # ディレクトリが除外リストにない場合
-        elif os.path.isdir(item_path) and item not in exclude_dirs:
-            subprocess.run(['attrib', '+h', item_path], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
 if __name__ == "__main__":
     try:
         app = MainApplication()
         app.mainloop()
     except Exception as e:
         handle_exception(e)
-    hide_files()
         
