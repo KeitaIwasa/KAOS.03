@@ -10,7 +10,6 @@ desktop.ini
 .tmp.driveupload
 *settings*
 *.ini
-*.iss
 Output/
 build/
 Pipfile*
