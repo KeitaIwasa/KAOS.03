@@ -8,7 +8,6 @@ import threading
 import os
 import socket
 import logging
-import subprocess
 import sys
 import http.client
 import urllib.parse
@@ -16,7 +15,7 @@ import configparser
 import webbrowser
 from freezegun import freeze_time
 import qrcode
-from PIL import Image, ImageTk
+from PIL import ImageTk
 
 def resource_path(relative_path):
     try:
