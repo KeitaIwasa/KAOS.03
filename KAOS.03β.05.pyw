@@ -13,7 +13,6 @@ import sys
 import http.client
 import urllib.parse
 import configparser
-import win32print
 import webbrowser
 from freezegun import freeze_time
 import qrcode
@@ -35,7 +34,6 @@ comp = False
 SHOP_NAME = 
 EOS_ID = 
 EOS_PW = 
-PRINTER_NAME = 
 """
     with open(r'setup/config.ini', "w", encoding="utf-8") as file:
         file.write(file_content)
@@ -271,9 +269,6 @@ class Page_0(tk.Frame):
         df_SHOP_NAME = st['SHOP_NAME']
         df_EOS_ID = st['EOS_ID']
         df_EOS_PW = st['EOS_PW']
-        df_PRINTER_NAME = st['PRINTER_NAME']
-        if df_PRINTER_NAME == '':
-            df_PRINTER_NAME = win32print.GetDefaultPrinter()
 
 
         # サブフレームの作成
@@ -301,17 +296,6 @@ class Page_0(tk.Frame):
         self.eos_password_entry.grid(row=2, column=1, padx=10, pady=5)
         self.eos_password_entry.insert(0, df_EOS_PW)
 
-        # 既定のプリンター（リストから選択）
-        self.printer_label = tk.Label(self.sub_frame, text="既定のプリンター")
-        self.printer_label.grid(row=3, column=0, padx=10, pady=5, sticky="w")
-        # インストールされているプリンタの一覧を取得します。
-        printers = win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL, None, 1)
-        # 取得したプリンタの情報からプリンタ名のみを抽出してリスト化
-        self.printer_names = [printer[2] for printer in printers]
-        self.printer_combobox = ttk.Combobox(self.sub_frame, values=self.printer_names, width=22)
-        self.printer_combobox.grid(row=3, column=1, padx=10, pady=5)
-        self.printer_combobox.set(df_PRINTER_NAME)
-
         # 保存ボタン
         self.save_button = tk.Button(self.sub_frame, text="保存", command=lambda:self.save_settings(parent))
         self.save_button.grid(row=4, column=0, columnspan=2, pady=10)
@@ -320,9 +304,8 @@ class Page_0(tk.Frame):
         shop_name = self.shop_name_entry.get()
         eos_user_id = self.eos_user_id_entry.get()
         eos_password = self.eos_password_entry.get()
-        printer = self.printer_combobox.get()
 
-        if shop_name and eos_user_id and eos_password and printer:
+        if shop_name and eos_user_id and eos_password:
             if messagebox.askokcancel("設定の保存","現在の入力で設定を保存しますか？", detail="保存するとアプリが再起動します。"):
                 if not shop_name == st['SHOP_NAME']:
                     print('getting shop_folder_id...')
@@ -336,7 +319,6 @@ comp = True
 SHOP_NAME = {shop_name}
 EOS_ID = {eos_user_id}
 EOS_PW = {eos_password}
-PRINTER_NAME = {printer}
 SHOP_FOLDER_ID = {shop_folder_id}
         """        
                 file_name = r"setup/config.ini"
