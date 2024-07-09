@@ -9,6 +9,7 @@ from selenium.common.exceptions import TimeoutException
 
 import time
 import os
+import sys
 from openpyxl import load_workbook
 import pandas as pd
 import numpy as np
@@ -30,6 +31,13 @@ with open('setup/config.ini', 'r', encoding='utf-8') as file:
     config.read_file(file)
 st = config['Settings'] 
 
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
 class AutomationHandler:
     def __init__(self):
         SCOPES = [
@@ -47,7 +55,7 @@ class AutomationHandler:
                 creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
-                    r'setup/credentials.json', SCOPES)
+                    resource_path('setup/client_secret.json'), SCOPES)
                 creds = flow.run_local_server(port=0)
             # Save the credentials for the next run
             with open(token_path, 'w') as token:
