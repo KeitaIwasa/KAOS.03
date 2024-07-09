@@ -10,3 +10,7 @@ desktop.ini
 .tmp.driveupload
 *settings*
 *.ini
+Output/
+build/
+Pipfile*
+dist/

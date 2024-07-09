@@ -8,51 +8,24 @@ import threading
 import os
 import socket
 import logging
-import subprocess
 import sys
-import pkg_resources
 import http.client
 import urllib.parse
-import shutil
 import configparser
-import win32print
 import webbrowser
-# installが必要なモジュールは下に書く
-
-try:
-    from plyer import notification
-    plyer_installed = True
-except:
-    pass
-    plyer_installed = False
-# install required library---------------------------------------------------------------------------
-with open('setup/requirements.txt', 'r') as file:
-        requirements = file.readlines()
-installing_library = False
-for requirement in requirements:
-    try:
-        pkg_resources.require(requirement)
-    except (pkg_resources.DistributionNotFound, pkg_resources.VersionConflict):
-        if installing_library is False and plyer_installed:
-            installing_library = True
-            notification.notify(
-                app_name = "KAOS",
-                app_icon = "setup/KAOS_icon.ico",
-                title = "KAOS",
-                message="\n自動発注システムをアップデートしています。少々お待ちください。",
-                timeout=5
-            )
-        print(f'installing {requirement}...')
-        subprocess.check_call([sys.executable, "-m", "pip", "install", requirement.strip()])
-#---------------------------------------------------------------------------------------------------
-
-# installが必要なモジュールはここに書く
 from freezegun import freeze_time
 import qrcode
-from PIL import Image, ImageTk
+from PIL import ImageTk
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 # 設定ファイルの読み込み
-if not os.path.exists('config.ini'):
+if not os.path.exists(r'setup/config.ini'):
     timestamp = datetime.now()
     file_content = f""";{timestamp}
 [Settings]
@@ -60,12 +33,11 @@ comp = False
 SHOP_NAME = 
 EOS_ID = 
 EOS_PW = 
-PRINTER_NAME = 
 """
-    with open('config.ini', "w", encoding="utf-8") as file:
+    with open(r'setup/config.ini', "w", encoding="utf-8") as file:
         file.write(file_content)
 config = configparser.ConfigParser()
-with open('config.ini', 'r', encoding='utf-8') as file:
+with open(r'setup/config.ini', 'r', encoding='utf-8') as file:
     config.read_file(file)
 st = config['Settings']
 
@@ -131,7 +103,7 @@ class MainApplication(tk.Tk):
     def show_qr(self):
         qr_window = tk.Toplevel()
         qr_window.title("お問い合わせ用QRコード")
-        photo = tk.PhotoImage(file="setup\岩佐LINEのQR.png")
+        photo = tk.PhotoImage(file=resource_path('setup/岩佐LINEのQR.png'))
         # 画像を表示するためのラベルウィジェットを作成
         label = tk.Label(qr_window, image=photo)
         label.image = photo  # 参照を保持
@@ -164,7 +136,7 @@ class MainApplication(tk.Tk):
         self.title("コメダ自動発注システム KAOS")
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.center_window(self, 600, 300)
-        self.iconbitmap('setup\KAOS_icon.ico')
+        self.iconbitmap(resource_path('setup/KAOS_icon.ico'))
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.frames = {}
@@ -296,9 +268,6 @@ class Page_0(tk.Frame):
         df_SHOP_NAME = st['SHOP_NAME']
         df_EOS_ID = st['EOS_ID']
         df_EOS_PW = st['EOS_PW']
-        df_PRINTER_NAME = st['PRINTER_NAME']
-        if df_PRINTER_NAME == '':
-            df_PRINTER_NAME = win32print.GetDefaultPrinter()
 
 
         # サブフレームの作成
@@ -326,17 +295,6 @@ class Page_0(tk.Frame):
         self.eos_password_entry.grid(row=2, column=1, padx=10, pady=5)
         self.eos_password_entry.insert(0, df_EOS_PW)
 
-        # 既定のプリンター（リストから選択）
-        self.printer_label = tk.Label(self.sub_frame, text="既定のプリンター")
-        self.printer_label.grid(row=3, column=0, padx=10, pady=5, sticky="w")
-        # インストールされているプリンタの一覧を取得します。
-        printers = win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL, None, 1)
-        # 取得したプリンタの情報からプリンタ名のみを抽出してリスト化
-        self.printer_names = [printer[2] for printer in printers]
-        self.printer_combobox = ttk.Combobox(self.sub_frame, values=self.printer_names, width=22)
-        self.printer_combobox.grid(row=3, column=1, padx=10, pady=5)
-        self.printer_combobox.set(df_PRINTER_NAME)
-
         # 保存ボタン
         self.save_button = tk.Button(self.sub_frame, text="保存", command=lambda:self.save_settings(parent))
         self.save_button.grid(row=4, column=0, columnspan=2, pady=10)
@@ -345,9 +303,8 @@ class Page_0(tk.Frame):
         shop_name = self.shop_name_entry.get()
         eos_user_id = self.eos_user_id_entry.get()
         eos_password = self.eos_password_entry.get()
-        printer = self.printer_combobox.get()
 
-        if shop_name and eos_user_id and eos_password and printer:
+        if shop_name and eos_user_id and eos_password:
             if messagebox.askokcancel("設定の保存","現在の入力で設定を保存しますか？", detail="保存するとアプリが再起動します。"):
                 if not shop_name == st['SHOP_NAME']:
                     print('getting shop_folder_id...')
@@ -361,10 +318,9 @@ comp = True
 SHOP_NAME = {shop_name}
 EOS_ID = {eos_user_id}
 EOS_PW = {eos_password}
-PRINTER_NAME = {printer}
 SHOP_FOLDER_ID = {shop_folder_id}
         """        
-                file_name = "config.ini"
+                file_name = r"setup/config.ini"
                 # ファイルを作成して内容を書き込みます
                 if os.path.exists(file_name):
                     os.remove(file_name)
@@ -380,14 +336,14 @@ class Page_1(Text_and_Button_Page):
     def __init__(self, parent):
         super().__init__(parent)
         #設定ボタン
-        setting_icon = tk.PhotoImage(file="setup/setting_icon.png").subsample(2,2)
+        setting_icon = tk.PhotoImage(file=resource_path('setup/setting_icon.png')).subsample(2,2)
         setting_button = tk.Button(self, image=setting_icon, compound="top", command=lambda: parent.show_frame(Page_0))
         setting_button.image = setting_icon
         setting_button.place(relx=0, rely=0, anchor='nw', x=10, y=10)
         setting_button_tooltip = ToolTip(setting_button, "設定") 
 
         #発注書変更ボタン
-        sheet_icon = tk.PhotoImage(file="setup/sheet_icon.png").subsample(2,2)
+        sheet_icon = tk.PhotoImage(file=resource_path('setup/sheet_icon.png')).subsample(2,2)
         sheet_button = tk.Button(self, image=sheet_icon, compound="top", command=lambda: self.open_original_sheet(parent))
         sheet_button.image = sheet_icon
         sheet_button.place(relx=0, rely=0, anchor='nw', x=41, y=10)
@@ -603,7 +559,7 @@ class Page_7i(List_Page):
 class Page_7ii(Text_and_2Buttons_Page): # 非食品が未入力
     def __init__(self, parent):
         super().__init__(parent)
-        self.label2.config(text='今日は非食品の発注日です。非食品の現在庫数がすべて空欄になっていますが、非食品は発注しなくてよろしいですか？')
+        self.label2.config(text='今日は非食品の発注日です。非食品の現在庫が入力されていませんが、非食品は発注しなくてよろしいですか？発注する場合は、発注書に現在庫を入力してから「再試行」をクリックしてください。')
         self.button_L.config(text='再試行', command=lambda:parent.show_frame(Page_7))
         self.button_R.config(text='非食品は発注しない', command=lambda:self.nonfood0_ok(parent))
     
@@ -645,30 +601,10 @@ class Page_8(List_Page):
         label_todo = tk.Label(self, text=text, justify='left', width=300)
         label_todo.pack(pady=20, padx=30)
 
-def hide_files():
-    """    
-    directory (str): 操作対象のディレクトリ
-    exclude_files (list): 除外するファイルのリスト
-    exclude_dirs (list): 除外するディレクトリのリスト
-    """
-    directory = os.path.dirname(os.path.abspath(__file__))  # スクリプトが含まれるディレクトリ
-    exclude_files = [os.path.basename(__file__)] + [f for f in os.listdir(directory) if f.endswith('.xlsx') or f.endswith('.xls')]
-    exclude_dirs = ['発注書Excel']
-
-    for item in os.listdir(directory):
-        item_path = os.path.join(directory, item)
-        # ファイルが除外リストにない場合
-        if os.path.isfile(item_path) and item not in exclude_files:
-            subprocess.run(['attrib', '+h', item_path], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        # ディレクトリが除外リストにない場合
-        elif os.path.isdir(item_path) and item not in exclude_dirs:
-            subprocess.run(['attrib', '+h', item_path], shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
 if __name__ == "__main__":
     try:
         app = MainApplication()
         app.mainloop()
     except Exception as e:
         handle_exception(e)
-    hide_files()
         
