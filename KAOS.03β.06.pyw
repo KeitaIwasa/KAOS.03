@@ -411,7 +411,10 @@ class Page_2(Text_and_Button_Page):
         super().__init__(parent)
 
         self.label1.config(text='発注が完了するまでこのウィンドウは閉じないでください。')
-        parent.today_order_file = f'発注書_{parent.today_str}' 
+        if parent.night_order == True:
+            parent.today_order_file = f'発注書_{parent.today_str}PM'
+        else:
+            parent.today_order_file = f'発注書_{parent.today_str}AM' 
         check_result = parent.handler.check_existing_sheet(parent.today_order_file)
         if check_result == False:
             parent.sheet_id, parent.sheet_url = False, False
