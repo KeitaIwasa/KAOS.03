@@ -5,7 +5,7 @@ AppVerName=KAOS 03.01
 OutputBaseFilename=KAOSsetup     
 VersionInfoDescription=kAOSセットアッププログラム
 DefaultDirName={pf}\KAOS
-VersionInfoVersion=3.1.0.0
+VersionInfoVersion=3.1.0.1
 AppCopyright=岩佐デジタル
 
 ; Languages セクション: 使用する言語を指定します
@@ -26,4 +26,4 @@ Source: "dist\KAOS\setup\*"; DestDir: "{app}\setup"; Flags: ignoreversion recurs
 ; Icons セクション: スタートメニューやデスクトップにショートカットを作成します
 [Icons]
 Name: "{group}\KAOS"; Filename: "{app}\KAOS.exe"
-Name: "{commondesktop}\KAOS"; Filename: "{app}\KAOS.exe"
+Name: "{commondesktop}\自動発注システムKAOS"; Filename: "{app}\KAOS.exe"
