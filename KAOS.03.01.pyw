@@ -16,6 +16,7 @@ import webbrowser
 from freezegun import freeze_time
 import qrcode
 from PIL import ImageTk
+import traceback
 
 def resource_path(relative_path):
     try:
@@ -71,18 +72,20 @@ def handle_exception(exc, message=False):
         os.makedirs(error_log_dir)
     log_file = os.path.join('error_log', log_filename)
     logging.basicConfig(filename=log_file, level=logging.ERROR, format='%(asctime)s - %(message)s', encoding='utf-8')
-    device_name=socket.gethostname()
-    logging.error(f"Device: {device_name}")
-    logging.error("Exception occurred", exc_info=exc)
+    error_message = traceback.format_exc()
+    logging.error(error_message)
+
+    # LINE Notify で通知
     try:
-        notify_message = f"{st['SHOP_NAME']}\n\nhttps://drive.google.com/drive/folders/1H7Izz-u465KTKz6JpxVVsraO97y3jpW5?usp=drive_link"
+        notify_message = f"{st['SHOP_NAME']}\n\n{error_message}"
         send_line_notify(notify_message)
     except Exception as e:
-        print(f"Failed send line notify:{e}")
-    if message is False:
+        logging.error(f"Failed to send LINE Notify: {e}")
+    if not message:
         messagebox.showerror("Error", "予期せぬエラーが発生しました。\nアプリを再起動してください。\n問題が解決しない場合は岩佐に連絡してください。")
     else:
         messagebox.showerror("Error", message)
+
 def thread_with_error_handle(target, *args, **kwargs):
     try:
         target(*args, **kwargs)
