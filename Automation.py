@@ -211,66 +211,33 @@ class AutomationHandler:
         else:
             return False
 
-    def execute_with_retry(self, service, request, script_id, retries=3, timeout=120):
-        http = httplib2.Http(timeout=timeout)
-        service._http = http
-        
+    def execute_with_retry(self, function_name, params, retries=3, timeout=120):
         for attempt in range(retries):
             try:
-                response = service.scripts().run(body=request, scriptId=script_id).execute()
+                response = self.call_google_script(function_name, params)
                 return response
-            except TimeoutError as e:
-                print(f"Attempt {attempt + 1} failed with timeout. Retrying...")
-                time.sleep(5)
             except Exception as e:
                 print(f"Attempt {attempt + 1} failed with error: {e}. Retrying...")
                 time.sleep(5)
         raise Exception("All retry attempts failed")
            
-    def generate_form(self, delivery_date_int, today_str_csv, today_str, night_order) :  
-        if night_order:
-            drive_service = build('drive', 'v3', credentials=creds)
-            file_metadata = {
-                'name': os.path.basename(f'{today_str_csv}_発注.CSV'),
-                'parents': [st['SHOP_FOLDER_ID']]
-            }
-            media = MediaFileUpload(self.csv_path, mimetype='application/octet-stream')
-            file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-            csv_id = file.get("id")
-            print(f'File ID: {csv_id}')
-        else:
-            csv_id = None
+    def generate_form(self, delivery_date_int, today_str, night_order):
+        with open(self.csv_path, 'r', encoding='utf-8') as file:
+            csv_data = file.read()
 
-        script_service = build('script', 'v1', credentials=creds)
-        script_id = 'AKfycbxK7pavgq0YZ-chJgYh_49eYCs0C6Gsm9RHBwpGIHFa4URkRXYivT8SeUVlt6nI-8Vbfg'
-        request = {
-            'function': 'generateForm',
-            'parameters': [delivery_date_int.isoformat(), csv_id, today_str, night_order, st['SHOP_NAME']]
+        params = {
+            'delivery_date_int': delivery_date_int.isoformat(),
+            'csv_data': csv_data,
+            'today_str': today_str,
+            'night_order': night_order,
+            'shop_name': st['SHOP_NAME']
         }
-        try:
-            response = script_service.scripts().run(body=request, scriptId=script_id).execute()
-            #発注明細csvをローカルから削除
-            response = self.execute_with_retry(script_service, request, script_id, retries=5)
-            if 'error' in response:
-                # エラーハンドリング
-                error_message = 'Error: {}'.format(response['error']['details'])
-                print(error_message)
-                raise Exception(error_message)
-            else:
-                # デバッグ情報を出力
-                debug_info_json = response['response'].get('result')
-                debug_info = json.loads(debug_info_json)
-                print('Debug Info:', debug_info)
 
-                self.new_spreadsheet_id = debug_info.get('spreadsheetId')
-                print('New Spreadsheet ID: {}'.format(self.new_spreadsheet_id))
-
-                spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{self.new_spreadsheet_id}/edit" 
-                
-                return self.new_spreadsheet_id, spreadsheet_url
-        except Exception as e:
-            print(f"Failed to execute the script: {e}")
-            raise Exception(e)
+        response = self.execute_with_retry('generateForm', params, retries=5)
+        if 'error' in response:
+            raise Exception(f"Error in generating form: {response['error']}")
+        else:
+            return response['spreadsheet_id'], response['spreadsheet_url']
 
     def get_spreadsheet(self, sheet_id):
         sheets_service = build('sheets', 'v4', credentials=creds)
