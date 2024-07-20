@@ -101,19 +101,6 @@ class AutomationHandler:
         while len(self.driver.find_elements(By.XPATH, value="//button[@title='Close']"))>0 :
             self.driver.find_element(By.XPATH, value="//button[@title='Close']").click()
             time.sleep(0.05)
-
-    def loading_workbook(self,closing_file, max_attempts=3):
-        try:
-            workbook = load_workbook(closing_file)
-            return workbook
-        except PermissionError as e:
-            if max_attempts > 0:
-                print(f'\n{os.path.basename(e.filename)}を閉じてください！')
-                time.sleep(1)
-                input('再試行 "Enter":')
-                return self.loading_workbook(closing_file, max_attempts-1)
-            else:
-                raise Exception('最大試行回数に達しました。')
             
     def download_folder_path(self):
         sub_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders'
