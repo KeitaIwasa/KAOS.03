@@ -450,7 +450,7 @@ class Page_4(Progress_Page): #発注書作成
         if parent.night_order == True:
             download_success = parent.handler.download_csv(parent.today_str_csv, parent.today_int)
         if download_success or (parent.night_order == False):
-            generate_result = parent.handler.generate_form(parent.delivery_date_int, parent.today_str_csv, parent.yesterday_str, parent.today_str, parent.night_order)
+            generate_result = parent.handler.generate_form(parent.delivery_date_int, parent.today_str_csv, parent.today_str, parent.night_order)
             if generate_result == False:
                 raise Exception
             else:

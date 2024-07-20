@@ -17,6 +17,7 @@ import winreg
 import configparser
 import httplib2
 import json
+import requests
 from datetime import datetime, timedelta
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
@@ -40,92 +41,45 @@ def resource_path(relative_path):
 
 class AutomationHandler:
     def __init__(self):
-        SCOPES = [
-            'https://www.googleapis.com/auth/spreadsheets',
-            'https://www.googleapis.com/auth/drive',
-            'https://www.googleapis.com/auth/script.projects',
-            'https://www.googleapis.com/auth/calendar.readonly'
-        ]
-        token_path = r'setup/token.json' # rを入れないとPermission Erorrになる
-        global creds
-        creds = Credentials.from_authorized_user_file(token_path, SCOPES)
-        if not creds.valid:
-            print('not creds.valid')
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    resource_path('setup/client_secret.json'), SCOPES)
-                creds = flow.run_local_server(port=0)
-            # Save the credentials for the next run
-            with open(token_path, 'w') as token:
-                token.write(creds.to_json())
+        # Google Apps ScriptのエンドポイントURL
+        self.script_url = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec'
         self.driver = None
+
+    def call_google_script(self, function_name, params):
+        data = {
+            'function': function_name,
+            'parameters': params
+        }
+        response = requests.post(self.script_url, data=json.dumps(data), headers={'Content-Type': 'application/json'})
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(f"Google Apps Script呼び出しエラー: {response.text}")
         
     def register_drive_id(self, shopName):
-        drive_service = build('drive', 'v3', credentials=creds)
-        parent_folder = '1H7Izz-u465KTKz6JpxVVsraO97y3jpW5'
-        new_folder_name = shopName
-        query = f"mimeType='application/vnd.google-apps.folder' and name='{new_folder_name}' and '{parent_folder}' in parents and trashed=false"
-        results = drive_service.files().list(q=query, spaces='drive', fields='files(id, name)').execute()
-        items = results.get('files', [])
-        if len(items)==0:
-            file_metadata = {
-                'name': shopName,
-                'mimeType': 'application/vnd.google-apps.folder',
-                'parents': [parent_folder] # parent folder "KAOS発注書"
-            }
-            folder = drive_service.files().create(body=file_metadata, fields='id').execute()
-            new_folder_id = folder.get('id')
-            print('Folder created with ID:', new_folder_id)
-            return new_folder_id
-        else:
-            return items[0]['id']
+        params = {'shopName': shopName}
+        response = self.call_google_script('registerDriveId', params)
+        return response['new_folder_id']
     
     def get_original_sheet(self):
-        drive_service = build('drive', 'v3', credentials=creds)
-        sheet_name = f'発注書【原本】_{st["SHOP_NAME"]}'
-        query = f"'{st['SHOP_FOLDER_ID']}' in parents and name = '{sheet_name}' and trashed = false and mimeType='application/vnd.google-apps.spreadsheet'"
-        results = drive_service.files().list(
-            q=query,
-            fields='files(id, name)').execute()
-        items = results.get('files', [])
-        if not items:
-            return False
+        params = {'shopName': st['SHOP_NAME']}
+        response = self.call_google_script('getOriginalSheet', params)
+        if response['found']:
+            return response['sheet_url']
         else:
-            sheet_id = items[0]['id']
-            sheet_url=f'https://docs.google.com/spreadsheets/d/{sheet_id}/edit?'
-            return sheet_url
-        
-    def find_folder_id(self, service, parent_folder_id, folder_name):
-        query = f"'{parent_folder_id}' in parents and mimeType = 'application/vnd.google-apps.folder' and name = '{folder_name}' and trashed = false"
-        results = service.files().list(q=query, fields="files(id, name)").execute()
-        items = results.get('files', [])
-        if not items:
-            print(f'No folder found with name: {folder_name}')
-            return None
-        return items[0]['id']
-    
-    def find_files_id(self, service, folder_id, file_name):
-        query = f"'{folder_id}' in parents and name = '{file_name}' and trashed = false"
-        results = service.files().list(q=query, fields="files(id, name)").execute()
-        items = results.get('files', [])
-        if not items:
-            print(f'No file found with name: {file_name}')
             return False
-        return items
-
+        
     def check_existing_sheet(self, sheet_name):
-        drive_service = build('drive', 'v3', credentials=creds)
-        orderform_folder = self.find_folder_id(drive_service, st['SHOP_FOLDER_ID'], '発注書')
-        sheets = self.find_files_id(drive_service, orderform_folder, sheet_name)
-        if sheets is False:
-            return False
+        params = {
+            'folder_id': st['SHOP_FOLDER_ID'],
+            'sheet_name': sheet_name
+        }
+        response = self.call_google_script('checkExistingSheet', params)
+        if response['found']:
+            return response['sheet_id'], response['spreadsheet_url']
         else:
-            sheet_id = sheets[0]['id']
-            spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/edit"
-            return sheet_id, spreadsheet_url    
-        
+            return False
+                
     # EOSログインメソッド
     def login_eos(self, user_id, password):
         if self.driver is None:
@@ -273,7 +227,7 @@ class AutomationHandler:
                 time.sleep(5)
         raise Exception("All retry attempts failed")
            
-    def generate_form(self, delivery_date_int, today_str_csv, yesterday_str, today_str, night_order) :  
+    def generate_form(self, delivery_date_int, today_str_csv, today_str, night_order) :  
         if night_order:
             drive_service = build('drive', 'v3', credentials=creds)
             file_metadata = {
@@ -296,7 +250,7 @@ class AutomationHandler:
         try:
             response = script_service.scripts().run(body=request, scriptId=script_id).execute()
             #発注明細csvをローカルから削除
-            #response = self.execute_with_retry(script_service, request, script_id, retries=5)
+            response = self.execute_with_retry(script_service, request, script_id, retries=5)
             if 'error' in response:
                 # エラーハンドリング
                 error_message = 'Error: {}'.format(response['error']['details'])
