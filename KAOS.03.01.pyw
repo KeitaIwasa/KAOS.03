@@ -540,8 +540,7 @@ class Page_7(Progress_Page): #発注数取得・入力
         elif df_nonfood.shape[0] == 0 and parent.today_int.weekday() in {1, 3, 5} and parent.nonfood0_ok == False:
             self.progress.stop()
             self.progress.pack_forget()
-            parent.show_frame(Page_7ii)
-            
+            parent.show_frame(Page_7ii)     
         elif len(NaN_ls) == 0:
             self.label_p.config(text="EOSへ発注数を入力中...")
             parent.attributes("-topmost", True)
