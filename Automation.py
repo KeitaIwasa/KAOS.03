@@ -19,12 +19,6 @@ import httplib2
 import json
 import requests
 from datetime import datetime, timedelta
-from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaFileUpload
-from google_auth_oauthlib.flow import InstalledAppFlow
 
 # 設定ファイルの読み込み
 config = configparser.ConfigParser()
@@ -42,7 +36,7 @@ def resource_path(relative_path):
 class AutomationHandler:
     def __init__(self):
         # Google Apps ScriptのエンドポイントURL
-        self.script_url = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec'
+        self.script_url = 'https://script.google.com/macros/s/AKfycbyixzT47V81tUQG2DgmO-YbPEdsm08m0CZxESsYeQziZ7SfS-n6xe7NN3gs4nb7CST6/exec'
         self.driver = None
 
     def call_google_script(self, function_name, params):
@@ -112,10 +106,8 @@ class AutomationHandler:
         self.login_eos(st['EOS_ID'], st['EOS_PW']) #EOSログインメソッド↑
         self.csv_path = f'{self.download_folder_path()}/{today_str_csv}_発注.CSV'
         self.csv_path_nonfood = f'{self.download_folder_path()}/{today_str_csv}_発注 (1).CSV'
-        max_retry_download = 20
-        if os.path.exists(self.csv_path):
-            pass
-        else:            
+        max_retry_download = 15
+        if not os.path.exists(self.csv_path):           
             # 左メニューの発注照会をクリック
             WebDriverWait(self.driver, 15).until(EC.presence_of_element_located((By.CLASS_NAME, 'menupng2'))).click() #発注
             WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//a[@accesskey='4']"))).click() #発注照会クリック
@@ -280,8 +272,6 @@ class AutomationHandler:
         input_order = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//a[@accesskey='3']")))
         input_order.click()
 
-        #if os.path.exists(st.WIN32COM_GEN_poPY_DIR):
-        #    shutil.rmtree(st.WIN32COM_GEN_PY_DIR) # win32comのキャッシュをフォルダごと削除（これをしないとエラーが起こる）
         WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'scode'))) 
         
         input_df_tuple = (self.input_df, self.input_df_nonfood)
