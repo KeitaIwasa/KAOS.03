@@ -405,26 +405,37 @@ class Page_1(Text_and_Button_Page):
 class Page_2(Text_and_Button_Page):
     def __init__(self, parent):
         super().__init__(parent)
+        self.label1.config(text='発注が完了するまでこのウィンドウは閉じないでください。') 
+        self.button1.config(text="OK", command=lambda: parent.show_frame(Page_2i))
 
-        self.label1.config(text='発注が完了するまでこのウィンドウは閉じないでください。')
+class Page_2i(Progress_Page): # 既存の発注書の存在確認
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.label_p.config(text="作成済みの発注書が存在するか確認中...")
         if parent.night_order == True:
             parent.today_order_file = f'発注書_{parent.today_str}PM'
         else:
-            parent.today_order_file = f'発注書_{parent.today_str}AM' 
+            parent.today_order_file = f'発注書_{parent.today_str}AM'
+        self.after(0, self.start_check_form(parent))
+
+    def start_check_form(self, parent):
+        threading.Thread(target=thread_with_error_handle, args=(self.check_form, parent,),daemon=True).start()
+
+    def check_form(self, parent):
         check_result = parent.handler.check_existing_sheet(parent.today_order_file)
         if check_result == False:
             parent.sheet_id, parent.sheet_url = False, False
+            parent.show_frame(Page_4)
         else:
             parent.sheet_id, parent.sheet_url = check_result
-        if parent.sheet_id and parent.sheet_url: 
-            self.button1.config(text="OK", command=lambda: parent.show_frame(Page_3))            
-        else:
-            self.button1.config(text="OK", command=lambda: parent.show_frame(Page_4))
+            parent.show_frame(Page_3)
 
 class Page_3(Text_and_2Buttons_Page): # すでに本日の発注書が存在する場合
     def __init__(self, parent):
         super().__init__(parent)
         self.label2.config(text=f"{parent.today_str}の発注書が既に存在します。\n既存のものを使用しますか？新規の発注書を生成しますか？")
+        parent.attributes("-topmost", True)
+        parent.attributes("-topmost", False)
         self.button_L.config(text="既存の発注書", command=lambda:parent.show_frame(Page_6))
         self.button_R.config(text="新規の発注書", command=lambda:parent.show_frame(Page_4))
 
@@ -432,7 +443,6 @@ class Page_4(Progress_Page): #発注書作成
     def __init__(self, parent):
         super().__init__(parent)
         self.label_p.config(text="本日の発注書を作成しています...")
-        parent.attributes("-topmost", True)
         self.after(0, self.start_setup_form(parent))
 
     def start_setup_form(self, parent):
@@ -470,6 +480,7 @@ class Page_5(Text_and_Button_Page): #発注明細ダウンロード失敗
 class Page_6(Text_and_Button_Page): #発注書生成完了&入力確認
     def __init__(self, parent):
         super().__init__(parent)
+        parent.attributes("-topmost", True)
         parent.attributes("-topmost", False)
         self.label1.config(text="発注書が作成されました。タブレットでQRコードを読み込み、現在庫数を入力してください。") 
         self.label1.pack(pady=(50,10))
