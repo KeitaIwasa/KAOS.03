@@ -309,11 +309,6 @@ class Page_0(tk.Frame):
 
         if shop_name and eos_user_id and eos_password:
             if messagebox.askokcancel("設定の保存","現在の入力で設定を保存しますか？", detail="保存するとアプリが再起動します。"):
-                if not shop_name == st['SHOP_NAME']:
-                    print('getting shop_folder_id...')
-                    shop_folder_id = parent.handler.register_drive_id(shop_name)
-                else:
-                    shop_folder_id = st['SHOP_FOLDER_ID']
                 timestamp = datetime.now()
                 file_content = f""";{timestamp}
 [Settings]
