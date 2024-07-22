@@ -10,6 +10,7 @@ from selenium.common.exceptions import TimeoutException
 import time
 import os
 import sys
+import logging
 from openpyxl import load_workbook
 import pandas as pd
 import numpy as np
@@ -45,6 +46,7 @@ class AutomationHandler:
             'parameters': params
         }
         response = requests.post(self.script_url, data=json.dumps(data), headers={'Content-Type': 'application/json'})
+        logging.info(f"Response from GAS: {response}")
         if response.status_code == 200:
             return response.json()
         else:
@@ -208,10 +210,11 @@ class AutomationHandler:
         }
 
         response = self.execute_with_retry('generateForm', params, retries=5)
+        logging.info(f"Raw response text: {response}")
         if 'error' in response:
             raise Exception(f"Error in generating form: {response['error']}")
         else:
-            return response['spreadsheet_id'], response['spreadsheet_url']
+            return response['spreadsheetId'], response['spreadsheetUrl']
 
     def get_spreadsheet(self, sheet_id):
         params = {'sheet_id': sheet_id}
