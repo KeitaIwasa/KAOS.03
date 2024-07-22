@@ -49,11 +49,6 @@ class AutomationHandler:
             return response.json()
         else:
             raise Exception(f"Google Apps Script呼び出しエラー: {response.text}")
-        
-    def register_drive_id(self, shopName):
-        params = {'shopName': shopName}
-        response = self.call_google_script('registerDriveId', params)
-        return response['new_folder_id']
     
     def get_original_sheet(self):
         params = {'shopName': st['SHOP_NAME']}
@@ -65,7 +60,7 @@ class AutomationHandler:
         
     def check_existing_sheet(self, sheet_name):
         params = {
-            'folder_id': st['SHOP_FOLDER_ID'],
+            'shopName': st['SHOP_NAME'],
             'sheet_name': sheet_name
         }
         response = self.call_google_script('checkExistingSheet', params)

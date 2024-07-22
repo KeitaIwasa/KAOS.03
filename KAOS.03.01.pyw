@@ -321,7 +321,6 @@ comp = True
 SHOP_NAME = {shop_name}
 EOS_ID = {eos_user_id}
 EOS_PW = {eos_password}
-SHOP_FOLDER_ID = {shop_folder_id}
         """        
                 file_name = r"setup/config.ini"
                 # ファイルを作成して内容を書き込みます
