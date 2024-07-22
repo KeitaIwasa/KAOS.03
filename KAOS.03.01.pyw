@@ -6,8 +6,8 @@ from tkinter import ttk
 from tkinter import messagebox
 import threading
 import os
-import socket
 import logging
+import logging.handlers
 import sys
 import http.client
 import urllib.parse
@@ -62,18 +62,11 @@ def send_line_notify(message):
 
 def handle_exception(exc, message=False):
     print(exc)
+    logging.exception(exc)
     global error_occurred
     global log_file
-    error_occurred = True
-    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    log_filename = f"error_log_{st['SHOP_NAME']}{current_time}.txt"
-    error_log_dir = 'error_log'
-    if not os.path.exists(error_log_dir):
-        os.makedirs(error_log_dir)
-    log_file = os.path.join('error_log', log_filename)
-    logging.basicConfig(filename=log_file, level=logging.ERROR, format='%(asctime)s - %(message)s', encoding='utf-8')
+    error_occurred = True   
     error_message = traceback.format_exc()
-    logging.error(error_message)
 
     # LINE Notify で通知
     try:
@@ -131,6 +124,12 @@ class MainApplication(tk.Tk):
         # ユーザーに確認メッセージを表示
         if messagebox.askyesno("終了確認", "本当に終了しますか？\n終了すると、自動で開かれたEOSのページも閉じます。"):
             self.handler.destroy_chrome()
+            if not error_occurred:
+                try:
+                    logging.shutdown() 
+                    os.remove(log_file)
+                except Exception as e:
+                    logging.error(f"ログファイルの削除に失敗しました: {e}")
             self.destroy()  # ウィンドウを閉じる
             self.quit()
 
@@ -601,6 +600,15 @@ class Page_8(List_Page):
         label_todo.pack(pady=20, padx=30)
 
 if __name__ == "__main__":
+    # logging設定
+    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    log_filename = f"error_log_{st['SHOP_NAME']}{current_time}.txt"
+    error_log_dir = 'error_log'
+    if not os.path.exists(error_log_dir):
+        os.makedirs(error_log_dir)
+    log_file = os.path.join('error_log', log_filename)
+    logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(message)s', encoding='utf-8')
+    
     try:
         app = MainApplication()
         app.mainloop()

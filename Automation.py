@@ -46,8 +46,8 @@ class AutomationHandler:
             'parameters': params
         }
         response = requests.post(self.script_url, data=json.dumps(data), headers={'Content-Type': 'application/json'})
-        logging.info(f"Response from GAS: {response}")
         if response.status_code == 200:
+            logging.info(f"Response JSON from GAS: {response.json()}")
             return response.json()
         else:
             raise Exception(f"Google Apps Script呼び出しエラー: {response.text}")
@@ -210,9 +210,8 @@ class AutomationHandler:
         }
 
         response = self.execute_with_retry('generateForm', params, retries=5)
-        logging.info(f"Raw response text: {response}")
         if 'error' in response:
-            raise Exception(f"Error in generating form: {response['error']}")
+            return False
         else:
             return response['spreadsheetId'], response['spreadsheetUrl']
 
