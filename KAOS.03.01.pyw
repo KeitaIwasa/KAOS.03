@@ -6,8 +6,8 @@ from tkinter import ttk
 from tkinter import messagebox
 import threading
 import os
-import socket
 import logging
+import logging.handlers
 import sys
 import http.client
 import urllib.parse
@@ -62,18 +62,11 @@ def send_line_notify(message):
 
 def handle_exception(exc, message=False):
     print(exc)
+    logging.exception(exc)
     global error_occurred
     global log_file
-    error_occurred = True
-    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    log_filename = f"error_log_{st['SHOP_NAME']}{current_time}.txt"
-    error_log_dir = 'error_log'
-    if not os.path.exists(error_log_dir):
-        os.makedirs(error_log_dir)
-    log_file = os.path.join('error_log', log_filename)
-    logging.basicConfig(filename=log_file, level=logging.ERROR, format='%(asctime)s - %(message)s', encoding='utf-8')
+    error_occurred = True   
     error_message = traceback.format_exc()
-    logging.error(error_message)
 
     # LINE Notify で通知
     try:
@@ -131,6 +124,12 @@ class MainApplication(tk.Tk):
         # ユーザーに確認メッセージを表示
         if messagebox.askyesno("終了確認", "本当に終了しますか？\n終了すると、自動で開かれたEOSのページも閉じます。"):
             self.handler.destroy_chrome()
+            if not error_occurred:
+                try:
+                    logging.shutdown() 
+                    os.remove(log_file)
+                except Exception as e:
+                    logging.error(f"ログファイルの削除に失敗しました: {e}")
             self.destroy()  # ウィンドウを閉じる
             self.quit()
 
@@ -309,11 +308,6 @@ class Page_0(tk.Frame):
 
         if shop_name and eos_user_id and eos_password:
             if messagebox.askokcancel("設定の保存","現在の入力で設定を保存しますか？", detail="保存するとアプリが再起動します。"):
-                if not shop_name == st['SHOP_NAME']:
-                    print('getting shop_folder_id...')
-                    shop_folder_id = parent.handler.register_drive_id(shop_name)
-                else:
-                    shop_folder_id = st['SHOP_FOLDER_ID']
                 timestamp = datetime.now()
                 file_content = f""";{timestamp}
 [Settings]
@@ -321,7 +315,6 @@ comp = True
 SHOP_NAME = {shop_name}
 EOS_ID = {eos_user_id}
 EOS_PW = {eos_password}
-SHOP_FOLDER_ID = {shop_folder_id}
         """        
                 file_name = r"setup/config.ini"
                 # ファイルを作成して内容を書き込みます
@@ -412,26 +405,37 @@ class Page_1(Text_and_Button_Page):
 class Page_2(Text_and_Button_Page):
     def __init__(self, parent):
         super().__init__(parent)
+        self.label1.config(text='発注が完了するまでこのウィンドウは閉じないでください。') 
+        self.button1.config(text="OK", command=lambda: parent.show_frame(Page_2i))
 
-        self.label1.config(text='発注が完了するまでこのウィンドウは閉じないでください。')
+class Page_2i(Progress_Page): # 既存の発注書の存在確認
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.label_p.config(text="作成済みの発注書が存在するか確認中...")
         if parent.night_order == True:
             parent.today_order_file = f'発注書_{parent.today_str}PM'
         else:
-            parent.today_order_file = f'発注書_{parent.today_str}AM' 
+            parent.today_order_file = f'発注書_{parent.today_str}AM'
+        self.after(0, self.start_check_form(parent))
+
+    def start_check_form(self, parent):
+        threading.Thread(target=thread_with_error_handle, args=(self.check_form, parent,),daemon=True).start()
+
+    def check_form(self, parent):
         check_result = parent.handler.check_existing_sheet(parent.today_order_file)
         if check_result == False:
             parent.sheet_id, parent.sheet_url = False, False
+            parent.show_frame(Page_4)
         else:
             parent.sheet_id, parent.sheet_url = check_result
-        if parent.sheet_id and parent.sheet_url: 
-            self.button1.config(text="OK", command=lambda: parent.show_frame(Page_3))            
-        else:
-            self.button1.config(text="OK", command=lambda: parent.show_frame(Page_4))
+            parent.show_frame(Page_3)
 
 class Page_3(Text_and_2Buttons_Page): # すでに本日の発注書が存在する場合
     def __init__(self, parent):
         super().__init__(parent)
         self.label2.config(text=f"{parent.today_str}の発注書が既に存在します。\n既存のものを使用しますか？新規の発注書を生成しますか？")
+        parent.attributes("-topmost", True)
+        parent.attributes("-topmost", False)
         self.button_L.config(text="既存の発注書", command=lambda:parent.show_frame(Page_6))
         self.button_R.config(text="新規の発注書", command=lambda:parent.show_frame(Page_4))
 
@@ -439,7 +443,6 @@ class Page_4(Progress_Page): #発注書作成
     def __init__(self, parent):
         super().__init__(parent)
         self.label_p.config(text="本日の発注書を作成しています...")
-        parent.attributes("-topmost", True)
         self.after(0, self.start_setup_form(parent))
 
     def start_setup_form(self, parent):
@@ -450,7 +453,7 @@ class Page_4(Progress_Page): #発注書作成
         if parent.night_order == True:
             download_success = parent.handler.download_csv(parent.today_str_csv, parent.today_int)
         if download_success or (parent.night_order == False):
-            generate_result = parent.handler.generate_form(parent.delivery_date_int, parent.today_str_csv, parent.yesterday_str, parent.today_str, parent.night_order)
+            generate_result = parent.handler.generate_form(parent.delivery_date_int, parent.today_str, parent.night_order)
             if generate_result == False:
                 raise Exception
             else:
@@ -477,6 +480,7 @@ class Page_5(Text_and_Button_Page): #発注明細ダウンロード失敗
 class Page_6(Text_and_Button_Page): #発注書生成完了&入力確認
     def __init__(self, parent):
         super().__init__(parent)
+        parent.attributes("-topmost", True)
         parent.attributes("-topmost", False)
         self.label1.config(text="発注書が作成されました。タブレットでQRコードを読み込み、現在庫数を入力してください。") 
         self.label1.pack(pady=(50,10))
@@ -540,8 +544,7 @@ class Page_7(Progress_Page): #発注数取得・入力
         elif df_nonfood.shape[0] == 0 and parent.today_int.weekday() in {1, 3, 5} and parent.nonfood0_ok == False:
             self.progress.stop()
             self.progress.pack_forget()
-            parent.show_frame(Page_7ii)
-            
+            parent.show_frame(Page_7ii)     
         elif len(NaN_ls) == 0:
             self.label_p.config(text="EOSへ発注数を入力中...")
             parent.attributes("-topmost", True)
@@ -608,6 +611,15 @@ class Page_8(List_Page):
         label_todo.pack(pady=20, padx=30)
 
 if __name__ == "__main__":
+    # logging設定
+    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    log_filename = f"error_log_{st['SHOP_NAME']}{current_time}.txt"
+    error_log_dir = 'error_log'
+    if not os.path.exists(error_log_dir):
+        os.makedirs(error_log_dir)
+    log_file = os.path.join('error_log', log_filename)
+    logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(message)s', encoding='utf-8')
+    
     try:
         app = MainApplication()
         app.mainloop()
