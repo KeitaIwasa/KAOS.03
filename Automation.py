@@ -111,11 +111,24 @@ class AutomationHandler:
 
             # 本日の発注を照会
             WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'inquiryButton'))).click() #照会ボタン
-            time.sleep(0.5)
+
+            # 画面の一番下までスクロール
+            self.driver.execute_script("document.body.style.zoom='65%'")
+            self.driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
                 
             # CSVをダウンロード
-            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'btnCsvoutConfirm'))).click() #CSV出力をクリック
-            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//*[text()='はい']"))).click() #ウィジェットのはいをクリック
+            btn_csv_out = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'btnCsvoutConfirm')))
+            self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn_csv_out)
+            time.sleep(0.3)
+            self.driver.execute_script("arguments[0].click();", btn_csv_out)  # JavaScriptでクリックを強制実行
+            # WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'btnCsvoutConfirm'))).click() #CSV出力をクリック
+            # WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//*[text()='はい']"))).click() 
+            
+            # ウィジェットのはいをクリック
+            btn_yes = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//*[text()='はい']")))
+            self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn_yes)
+            time.sleep(0.3)  # 少し待機
+            self.driver.execute_script("arguments[0].click();", btn_yes)
 
             today_str_csv = datetime.today().strftime('%Y%m%d') #本日の日付（ダウンロードした発注明細csvは発注日付に関係なく本日のreal日付が付いている）
             retry_download = 0
@@ -124,7 +137,6 @@ class AutomationHandler:
                 if os.path.exists(self.csv_path):
                     break
                 elif retry_download == max_retry_download:
-                    self.driver.maximize_window()
                     return False    
                 else:
                     retry_download += 1
