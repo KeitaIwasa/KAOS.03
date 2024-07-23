@@ -4,12 +4,11 @@ block_cipher = None
 
 
 a = Analysis(
-    ['KAOS.03.01.pyw'],
+    ['KAOS.03.02.py'],
     pathex=['.'],
     binaries=[],
     datas=[
         ('Automation.py', '.'), 
-        ('setup/client_secret.json', 'setup'),
         ('setup/KAOS_icon.ico', 'setup'),
         ('setup/sheet_icon.png', 'setup'),
         ('setup/setting_icon.png', 'setup'),
@@ -23,8 +22,6 @@ a = Analysis(
         'idna',
         'certifi',
         'urllib3',
-        'google.auth.transport.requests',
-        'google.auth'
     ],
     hookspath=[],
     runtime_hooks=[],
