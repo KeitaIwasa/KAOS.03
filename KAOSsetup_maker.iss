@@ -5,7 +5,7 @@ AppVerName=KAOS 03.03
 OutputBaseFilename=KAOS_setup.03.03     
 VersionInfoDescription=kAOSセットアッププログラム
 DefaultDirName={pf}\KAOS
-VersionInfoVersion=3.3.0.0
+VersionInfoVersion=3.3.1.0
 AppCopyright=岩佐デジタル
 
 ; Languages セクション: 使用する言語を指定します

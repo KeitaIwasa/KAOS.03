@@ -107,11 +107,21 @@ class AutomationHandler:
         try:
             if not os.path.exists(self.csv_path):           
                 # 左メニューの発注照会をクリック
-                WebDriverWait(self.driver, 15).until(EC.presence_of_element_located((By.CLASS_NAME, 'menupng2'))).click() #発注
-                WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//a[@accesskey='4']"))).click() #発注照会クリック
+                menupng2 = WebDriverWait(self.driver, 15).until(EC.presence_of_element_located((By.CLASS_NAME, 'menupng2'))) #発注
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", menupng2)
+                time.sleep(0.3)
+                self.driver.execute_script("arguments[0].click();", menupng2)  # JavaScriptでクリックを強制実行
+                
+                inquiry_element = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//a[@accesskey='4']")))
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", inquiry_element)
+                time.sleep(0.3)
+                self.driver.execute_script("arguments[0].click();", inquiry_element)  # JavaScriptでクリックを強制実行
 
                 # 本日の発注を照会
-                WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'inquiryButton'))).click() #照会ボタン
+                inquiry_button = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'inquiryButton')))
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", inquiry_button)
+                time.sleep(0.3)
+                self.driver.execute_script("arguments[0].click();", inquiry_button)  # JavaScriptでクリックを強制実行
 
                 # 画面の一番下までスクロール
                 self.driver.execute_script("document.body.style.zoom='65%'")
@@ -121,9 +131,7 @@ class AutomationHandler:
                 btn_csv_out = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'btnCsvoutConfirm')))
                 self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn_csv_out)
                 time.sleep(0.3)
-                self.driver.execute_script("arguments[0].click();", btn_csv_out)  # JavaScriptでクリックを強制実行
-                # WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'btnCsvoutConfirm'))).click() #CSV出力をクリック
-                # WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//*[text()='はい']"))).click() 
+                self.driver.execute_script("arguments[0].click();", btn_csv_out)  # JavaScriptでクリックを強制実行 
                 
                 # ウィジェットのはいをクリック
                 btn_yes = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//*[text()='はい']")))
@@ -131,17 +139,17 @@ class AutomationHandler:
                 time.sleep(0.3)  # 少し待機
                 self.driver.execute_script("arguments[0].click();", btn_yes)
 
-                today_str_csv = datetime.today().strftime('%Y%m%d') #本日の日付（ダウンロードした発注明細csvは発注日付に関係なく本日のreal日付が付いている）
-                retry_download = 0
-                # 前日の発注明細をロード
-                while retry_download <= max_retry_download:
-                    if os.path.exists(self.csv_path):
-                        break
-                    elif retry_download == max_retry_download:
-                        return False    
-                    else:
-                        retry_download += 1
-                        time.sleep(0.1)
+            today_str_csv = datetime.today().strftime('%Y%m%d') #本日の日付（ダウンロードした発注明細csvは発注日付に関係なく本日のreal日付が付いている）
+            retry_download = 0
+            # 前日の発注明細をロード
+            while retry_download <= max_retry_download:
+                if os.path.exists(self.csv_path):
+                    break
+                elif retry_download == max_retry_download:
+                    return False    
+                else:
+                    retry_download += 1
+                    time.sleep(0.1)
         except:
             return False
 
