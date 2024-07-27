@@ -45,6 +45,7 @@ exe = EXE(
     upx=True,
     console=False,
     icon='setup/KAOS_icon.ico',
+    version='app.version'
 )
 
 coll = COLLECT(

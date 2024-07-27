@@ -1,0 +1,14 @@
+"""
+コマンド`create-version-file version.yaml --outfile app.version`でバージョンファイルを作成
+"""
+Version: 3.3.2.0
+CompanyName: 岩佐デジタル
+FileDescription: 自動発注システムKAOS
+InternalName: KAOS
+LegalCopyright: © 2024 岩佐デジタル. All rights reserved.
+OriginalFilename: KAOS.exe
+ProductName: KAOS
+Translation:
+  - langID: 1041
+    charsetID: 1200
+
