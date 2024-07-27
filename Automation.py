@@ -118,7 +118,7 @@ class AutomationHandler:
                 self.driver.execute_script("arguments[0].click();", inquiry_element)  # JavaScriptでクリックを強制実行
 
                 # 本日の発注を照会
-                inquiry_button = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'inquiryButton')))
+                inquiry_button = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.ID, 'inquiryButton')))
                 self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", inquiry_button)
                 time.sleep(0.3)
                 self.driver.execute_script("arguments[0].click();", inquiry_button)  # JavaScriptでクリックを強制実行
@@ -128,9 +128,9 @@ class AutomationHandler:
                 self.driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
                     
                 # CSVをダウンロード
-                btn_csv_out = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'btnCsvoutConfirm')))
+                btn_csv_out = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.ID, 'btnCsvoutConfirm')))
                 self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn_csv_out)
-                time.sleep(0.3)
+                time.sleep(0.5)
                 self.driver.execute_script("arguments[0].click();", btn_csv_out)  # JavaScriptでクリックを強制実行 
                 
                 # ウィジェットのはいをクリック

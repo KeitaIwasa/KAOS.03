@@ -26,6 +26,9 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 # 設定ファイルの読み込み
+#setupフォルダがない場合は作成
+if not os.path.exists('setup'):
+    os.makedirs('setup')
 if not os.path.exists(r'setup/config.ini'):
     timestamp = datetime.now()
     file_content = f""";{timestamp}
