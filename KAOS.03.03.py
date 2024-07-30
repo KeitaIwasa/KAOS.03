@@ -133,6 +133,8 @@ class MainApplication(tk.Tk):
                     os.remove(log_file)
                 except Exception as e:
                     logging.error(f"ログファイルの削除に失敗しました: {e}")
+            if os.path.exists(f'{self.handler.download_folder_path()}/{self.today_str_csv}_発注.CSV'):
+                os.remove(f'{self.handler.download_folder_path()}/{self.today_str_csv}_発注.CSV')
             self.destroy()  # ウィンドウを閉じる
             self.quit()
 
@@ -160,7 +162,7 @@ class MainApplication(tk.Tk):
         if st['comp'] == "True":
             self.show_frame(Page_1)
         else:
-            self.show_frame(Page_0)
+            self.show_frame(Page_0)        
 
 class Text_and_Button_Page(tk.Frame):
     def __init__(self, parent):
@@ -628,4 +630,6 @@ if __name__ == "__main__":
         app.mainloop()
     except Exception as e:
         handle_exception(e)
+    finally:
+        app.delete_csv()
         
