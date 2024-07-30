@@ -10,11 +10,9 @@ pandas = "*"
 numpy = "*"
 winreg = "*"
 configparser = "*"
-httplib2 = "*"
 requests = "*"
 freezegun = "*"
 qrcode = "*"
-pillow = "*"
 
 [dev-packages]
 

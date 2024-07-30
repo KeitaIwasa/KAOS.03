@@ -4,7 +4,7 @@ block_cipher = None
 
 
 a = Analysis(
-    ['KAOS.03.03.py'],
+    ['KAOS.3.4.py'],
     pathex=['.'],
     binaries=[],
     datas=[

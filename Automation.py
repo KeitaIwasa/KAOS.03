@@ -16,7 +16,6 @@ import pandas as pd
 import numpy as np
 import winreg
 import configparser
-import httplib2
 import json
 import requests
 from datetime import datetime, timedelta
