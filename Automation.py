@@ -109,7 +109,7 @@ class AutomationHandler:
                 menupng2 = WebDriverWait(self.driver, 15).until(EC.presence_of_element_located((By.CLASS_NAME, 'menupng2'))) #発注
                 self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", menupng2)
                 time.sleep(0.3)
-                self.driver.execute_script("arguments[0].click();", menupng2)  # JavaScriptでクリックを強制実行
+                self.driver.execute_script("arguments[0].click();", menupng2)  # .click()だと画面サイズなどによってうまくいかない場合があるので、JavaScriptでクリックを強制実行
                 
                 inquiry_element = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//a[@accesskey='4']")))
                 self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", inquiry_element)
@@ -138,7 +138,6 @@ class AutomationHandler:
                 time.sleep(0.3)  # 少し待機
                 self.driver.execute_script("arguments[0].click();", btn_yes)
 
-            today_str_csv = datetime.today().strftime('%Y%m%d') #本日の日付（ダウンロードした発注明細csvは発注日付に関係なく本日のreal日付が付いている）
             retry_download = 0
             # 前日の発注明細をロード
             while retry_download <= max_retry_download:
@@ -157,14 +156,23 @@ class AutomationHandler:
                 pass
             else:
                 # 左メニューの発注照会をクリック
-                WebDriverWait(self.driver, 15).until(EC.presence_of_element_located((By.CLASS_NAME, 'menupng2'))).click() #発注
-                WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//a[@accesskey='4']"))).click() #発注照会クリック
+                menupng2 = WebDriverWait(self.driver, 15).until(EC.presence_of_element_located((By.CLASS_NAME, 'menupng2'))) #発注
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", menupng2)
+                time.sleep(0.3)
+                self.driver.execute_script("arguments[0].click();", menupng2)  # JavaScriptでクリックを強制実行
+
+                inquiry_element = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//a[@accesskey='4']")))
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", inquiry_element)
+                time.sleep(0.3)
+                self.driver.execute_script("arguments[0].click();", inquiry_element)  # JavaScriptでクリックを強制実行
+
                 # 前日の日付を計算
                 yesterday_int = today_int - timedelta(days=1)
                 # 前日の日付を文字列に変換
                 yesterday_str = yesterday_int.strftime('%d')
                 # 前日の日付の番号を取得（"06" -> "6"のように先頭のゼロを取り除く）
                 yesterday_number = str(int(yesterday_str))
+
                 WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'selectFromDay')))
                 select_from_date = self.driver.find_element(By.ID, 'selectFromDay')
                 select_from = Select(select_from_date)
@@ -178,12 +186,27 @@ class AutomationHandler:
                 select_kubun_nonfood = Select(select_kubun)
                 select_kubun_nonfood.select_by_value("2")
 
-                WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'inquiryButton'))).click() #照会ボタン
-                time.sleep(0.5)
+                inquiry_button = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.ID, 'inquiryButton')))
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", inquiry_button)
+                time.sleep(0.3)
+                self.driver.execute_script("arguments[0].click();", inquiry_button)  # JavaScriptでクリックを強制実行
+                    
+                # 画面の一番下までスクロール
+                self.driver.execute_script("document.body.style.zoom='65%'")
+                self.driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
                     
                 # CSVをダウンロード
-                WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'btnCsvoutConfirm'))).click() #CSV出力をクリック
-                WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//*[text()='はい']"))).click() #ウィジェットのはいをクリック
+                btn_csv_out = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.ID, 'btnCsvoutConfirm')))
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn_csv_out)
+                time.sleep(0.5)
+                self.driver.execute_script("arguments[0].click();", btn_csv_out)  # JavaScriptでクリックを強制実行 
+                
+                # ウィジェットのはいをクリック
+                btn_yes = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//*[text()='はい']")))
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn_yes)
+                time.sleep(0.3)  # 少し待機
+                self.driver.execute_script("arguments[0].click();", btn_yes)
+
                 retry_download = 0
                 # 前々日の非食品の発注明細をダウンロード
                 while retry_download <= max_retry_download:
