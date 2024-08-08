@@ -398,12 +398,25 @@ class Page_1(Text_and_Button_Page):
             parent.show_frame(Page_1) 
 
     def open_original_sheet(self, parent):
+        parent.show_frame(Page_OS)
+
+class Page_OS(Progress_Page):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.label_p.config(text="発注書の原本を開いています...")
+        self.after(0, self.start_open_original_sheet(parent))
+
+    def start_open_original_sheet(self, parent):
+        threading.Thread(target=thread_with_error_handle, args=(self.open_original_sheet, parent,),daemon=True).start()
+
+    def open_original_sheet(self, parent):
         try:
             original_sheet_url = parent.handler.get_original_sheet()
             if original_sheet_url == False:
                 raise Exception("Original sheet not found")
             else:
                 webbrowser.open(original_sheet_url)
+            parent.show_frame(Page_1)
         except Exception as e:
             handle_exception(e, message="発注書の原本が見つかりません。「お問い合わせ」から担当者に連絡してください。")
 
