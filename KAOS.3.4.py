@@ -142,8 +142,9 @@ class MainApplication(tk.Tk):
         super().__init__()
         self.title("コメダ自動発注システム KAOS")
         self.protocol("WM_DELETE_WINDOW", self.on_close)
-        self.center_window(self, 600, 300)
+        self.center_window(self, 600, 350)
         self.iconbitmap(resource_path('setup/KAOS_icon.ico'))
+        self.option_add("*Font", ("Yu Gothic UI", 11))
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.frames = {}
