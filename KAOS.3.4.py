@@ -102,14 +102,16 @@ class MainApplication(tk.Tk):
     def show_qr(self):
         qr_window = tk.Toplevel()
         qr_window.title("お問い合わせ用QRコード")
-        photo = tk.PhotoImage(file=resource_path('setup/岩佐LINEのQR.png'))
+
+        # 説明文を表示するラベルを追加
+        description_label = tk.Label(qr_window, text=" こちらのQRコードから、公式サポートにチャットまたは通話でご連絡ください。")
+        description_label.pack()
+
+        photo = tk.PhotoImage(file=resource_path('setup/KAOS_Support_QR_resized.png'))
         # 画像を表示するためのラベルウィジェットを作成
         label = tk.Label(qr_window, image=photo)
         label.image = photo  # 参照を保持
         label.pack()
-        # 説明文を表示するラベルを追加
-        description_label = tk.Label(qr_window, text=" こちらのQRコードから、担当/岩佐に電話orLINEしてください。", font=('Helvetica', 10))
-        description_label.pack()
     
     def center_window(self, root, width, height):
         # スクリーンの幅と高さを取得
@@ -142,8 +144,9 @@ class MainApplication(tk.Tk):
         super().__init__()
         self.title("コメダ自動発注システム KAOS")
         self.protocol("WM_DELETE_WINDOW", self.on_close)
-        self.center_window(self, 600, 300)
+        self.center_window(self, 600, 350)
         self.iconbitmap(resource_path('setup/KAOS_icon.ico'))
+        self.option_add("*Font", ("Yu Gothic UI", 11))
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.frames = {}
