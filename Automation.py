@@ -19,6 +19,7 @@ import configparser
 import json
 import requests
 from datetime import datetime, timedelta
+import random
 
 # 設定ファイルの読み込み
 config = configparser.ConfigParser()
@@ -40,16 +41,30 @@ class AutomationHandler:
         self.driver = None
 
     def call_google_script(self, function_name, params):
-        data = {
-            'function': function_name,
-            'parameters': params
-        }
-        response = requests.post(self.script_url, data=json.dumps(data), headers={'Content-Type': 'application/json'})
-        if response.status_code == 200:
-            logging.info(f"Response JSON from GAS: {response.json()}")
-            return response.json()
-        else:
-            raise Exception(f"Google Apps Script呼び出しエラー: {response.text}")
+        max_retries = 3
+
+        for attempt in range(max_retries):
+            try:
+                data = {
+                    'function': function_name,
+                    'parameters': params
+                }
+                response = requests.post(self.script_url, data=json.dumps(data), headers={'Content-Type': 'application/json'})
+                if response.status_code == 200:
+                    logging.info(f"Response JSON from GAS: {response.json()}")
+                    return response.json()
+                else:
+                    logging.warning(f"Attempt {attempt + 1} failed: {response.text}")
+                    raise Exception(f"Google Apps Script呼び出しエラー: {response.text}")
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    delay = (2 ** attempt) + random.uniform(0, 1)  # 指数バックオフ＋ランダムジッター
+                    logging.info(f"Retrying in {delay:.2f} seconds...")
+                    time.sleep(delay)
+                else:
+                    logging.error(f"Max attempts reached. Raising exception.")
+                    raise e
+        
     
     def get_original_sheet(self):
         params = {'shopName': st['SHOP_NAME']}
