@@ -102,14 +102,16 @@ class MainApplication(tk.Tk):
     def show_qr(self):
         qr_window = tk.Toplevel()
         qr_window.title("お問い合わせ用QRコード")
-        photo = tk.PhotoImage(file=resource_path('setup/岩佐LINEのQR.png'))
+        
+        # 説明文を表示するラベルを追加
+        description_label = tk.Label(qr_window, text=" こちらのQRコードから、公式サポートにLINEしてください。", font=('Helvetica', 10))
+        description_label.pack()
+
+        photo = tk.PhotoImage(file=resource_path('setup/KAOS_Support_QR_resized.png'))
         # 画像を表示するためのラベルウィジェットを作成
         label = tk.Label(qr_window, image=photo)
         label.image = photo  # 参照を保持
         label.pack()
-        # 説明文を表示するラベルを追加
-        description_label = tk.Label(qr_window, text=" こちらのQRコードから、担当/岩佐に電話orLINEしてください。", font=('Helvetica', 10))
-        description_label.pack()
     
     def center_window(self, root, width, height):
         # スクリーンの幅と高さを取得
