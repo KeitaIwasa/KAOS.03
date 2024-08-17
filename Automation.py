@@ -400,7 +400,13 @@ class AutomationHandler:
                             input_field = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, former_table_id)))
                             input_field.clear()
                             former_max_order_value = int(self.driver.find_element(By.ID, former_table_id).get_attribute('data-sgosuu')) - 1
-                            input_field.send_keys(former_max_order_value) #発注数を入力  
+                            former_max_input = 0
+                            while former_max_input < former_max_order_value: #former_max_order_valueがsetvalueで割り切れない場合があるので、setvalueを足していき、former_max_order_valueを超えないさいだいのsetvalueの倍数にする
+                                if former_max_input + set_value > former_max_order_value:
+                                    break
+                                else:
+                                    former_max_input += former_set_value
+                            input_field.send_keys(former_max_input) #発注数を入力
                         else:
                             error_ls.append(f'{former_input_number}：{dict_data[former_input_number]}（エラー理由：不明）')
                             self.driver.find_element(By.CLASS_NAME, 'ui-icon-closethick').click() # ×ボタンでダイアログを閉じる
@@ -408,8 +414,8 @@ class AutomationHandler:
                         input_field = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, table_id)))
                         input_field.clear() #input_fieldのデフォルト0をクリア   
                         input_field.send_keys(order_value) #発注数を入力
-
-                former_table_id = table_id
+                former_set_value = set_value
+                former_table_id = table_prdx_number_dict[row.商品コード]
                 former_input_number = row.商品コード  
 
         if len(error_ls) > 0 :    
