@@ -9,6 +9,7 @@ import os
 import logging
 import logging.handlers
 import sys
+import ctypes
 import http.client
 import urllib.parse
 import configparser
@@ -44,6 +45,26 @@ config = configparser.ConfigParser()
 with open(r'setup/config.ini', 'r', encoding='utf-8') as file:
     config.read_file(file)
 st = config['Settings']
+
+# ファイルバージョンの取得
+if getattr(sys, 'frozen', False):
+    # exeで実行されている場合
+    file_path = sys.executable
+    size = ctypes.windll.version.GetFileVersionInfoSizeW(file_path, None)  
+    if size == 0:
+        raise ctypes.WinError()
+    res = ctypes.create_string_buffer(size)
+    ctypes.windll.version.GetFileVersionInfoW(file_path, None, size, res)
+    r = ctypes.c_uint()
+    l = ctypes.c_wchar_p()
+    ctypes.windll.version.VerQueryValueW(res, '\\', ctypes.byref(r), ctypes.byref(l))
+    if l == 0:
+        raise ctypes.WinError()
+    vinfo = ctypes.cast(r.value, ctypes.POINTER(ctypes.c_ushort))
+    file_version = '{}.{}.{}.{}'.format(vinfo[1], vinfo[0], vinfo[3], vinfo[2])
+else:
+    file_version = "3.5.1.0"
+
 
 
 from Automation import AutomationHandler
@@ -304,6 +325,10 @@ class Page_0(tk.Frame):
         self.eos_password_entry = tk.Entry(self.sub_frame, width=25)
         self.eos_password_entry.grid(row=2, column=1, padx=10, pady=5)
         self.eos_password_entry.insert(0, df_EOS_PW)
+
+        # ファイルバージョンの表示
+        self.version_label = tk.Label(self.sub_frame, text=f"バージョン: {file_version}")
+        self.version_label.grid(row=3, column=0, columnspan=2, pady=10)
 
         # 保存ボタン
         self.save_button = tk.Button(self.sub_frame, text="保存", command=lambda:self.save_settings(parent))
