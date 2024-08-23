@@ -20,6 +20,7 @@ import json
 import requests
 from datetime import datetime, timedelta
 import random
+import subprocess
 
 # 設定ファイルの読み込み
 config = configparser.ConfigParser()
@@ -40,6 +41,38 @@ class AutomationHandler:
         self.script_url = 'https://script.google.com/macros/s/AKfycbyixzT47V81tUQG2DgmO-YbPEdsm08m0CZxESsYeQziZ7SfS-n6xe7NN3gs4nb7CST6/exec'
         self.driver = None
 
+    def check_update(self, store_name, current_version):
+        try:
+            response = requests.get("https://support.iwasadigital.com/updates/kaos/versions.json")
+            if response.status_code == 200:
+                versions = response.json()
+                latest_version = versions.get(store_name)
+                if latest_version and latest_version != current_version:
+                    return True, latest_version
+                else:
+                    return False, None
+            else:
+                logging.error(f"Error during version check: {response.text}")
+                return False, None
+        except Exception as e:
+            logging.error(f"Error during version check: {e}")
+            return False, None
+        
+    def execute_update(self, latest_version):
+        try:
+            url = f"https://support.iwasadigital.com/updates/kaos/KAOS_Update.{latest_version}.exe"
+            installer_path = f"./KAOS_Update.{latest_version}.exe"
+            response = requests.get(url)
+            with open(installer_path, 'wb') as file:
+                file.write(response.content)
+            # インストーラの実行とKAOS.exeの終了
+            subprocess.Popen([installer_path, "/silent"])
+            os._exit(0)  # KAOS.exeを終了する
+
+        except Exception as e:
+            logging.error(f"Error during update execution: {e}")
+            return False
+    
     def call_google_script(self, function_name, params):
         max_retries = 3
 

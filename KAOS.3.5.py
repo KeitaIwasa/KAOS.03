@@ -89,8 +89,6 @@ if getattr(sys, 'frozen', False):
 else:
     file_version = "3.5.1.0"
 
-
-
 from Automation import AutomationHandler
 
 # Error handling ---------------------------------------------------
@@ -207,7 +205,17 @@ class MainApplication(tk.Tk):
         self.today_int = None
 
         self.handler = AutomationHandler()
+
         if st['comp'] == "True":
+            # アップデートチェック
+            need_update, latest_version = self.handler.check_update(st['SHOP_NAME'], file_version)
+            if need_update:
+                if messagebox.askyesno("アップデートの確認", "新しいバージョンがあります。アップデートしますか？"):
+                    logging.info("ユーザーがアップデートを承認しました。")
+                    self.handler.execute_update(latest_version)
+                else:
+                    logging.info("ユーザーがアップデートをキャンセルしました。")
+            
             self.show_frame(Page_1)
         else:
             self.show_frame(Page_0)        
