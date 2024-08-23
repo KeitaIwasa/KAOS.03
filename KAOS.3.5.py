@@ -48,20 +48,44 @@ st = config['Settings']
 
 # ファイルバージョンの取得
 if getattr(sys, 'frozen', False):
-    # exeで実行されている場合
+    # VS_FIXEDFILEINFO 構造体の定義
+    class VS_FIXEDFILEINFO(ctypes.Structure):
+        _fields_ = [
+            ("dwSignature", ctypes.c_uint32),
+            ("dwStrucVersion", ctypes.c_uint32),
+            ("dwFileVersionMS", ctypes.c_uint32),
+            ("dwFileVersionLS", ctypes.c_uint32),
+            ("dwProductVersionMS", ctypes.c_uint32),
+            ("dwProductVersionLS", ctypes.c_uint32),
+            ("dwFileFlagsMask", ctypes.c_uint32),
+            ("dwFileFlags", ctypes.c_uint32),
+            ("dwFileOS", ctypes.c_uint32),
+            ("dwFileType", ctypes.c_uint32),
+            ("dwFileSubtype", ctypes.c_uint32),
+            ("dwFileDateMS", ctypes.c_uint32),
+            ("dwFileDateLS", ctypes.c_uint32),
+        ]
+
     file_path = sys.executable
-    size = ctypes.windll.version.GetFileVersionInfoSizeW(file_path, None)  
+    size = ctypes.windll.version.GetFileVersionInfoSizeW(file_path, None)
     if size == 0:
         raise ctypes.WinError()
+
     res = ctypes.create_string_buffer(size)
-    ctypes.windll.version.GetFileVersionInfoW(file_path, None, size, res)
-    r = ctypes.c_uint()
-    l = ctypes.c_wchar_p()
-    ctypes.windll.version.VerQueryValueW(res, '\\', ctypes.byref(r), ctypes.byref(l))
-    if l == 0:
+    success = ctypes.windll.version.GetFileVersionInfoW(file_path, 0, size, res)
+    if not success:
         raise ctypes.WinError()
-    vinfo = ctypes.cast(r.value, ctypes.POINTER(ctypes.c_ushort))
-    file_version = '{}.{}.{}.{}'.format(vinfo[1], vinfo[0], vinfo[3], vinfo[2])
+
+    # VerQueryValueW で VS_FIXEDFILEINFO を取得
+    p_val = ctypes.c_void_p()
+    l_val = ctypes.c_uint()
+    success = ctypes.windll.version.VerQueryValueW(res, "\\", ctypes.byref(p_val), ctypes.byref(l_val))
+    if not success:
+        raise ctypes.WinError()
+
+    # ポインタを VS_FIXEDFILEINFO にキャスト
+    ffi = ctypes.cast(p_val.value, ctypes.POINTER(VS_FIXEDFILEINFO)).contents
+    file_version = f"{ffi.dwFileVersionMS >> 16}.{ffi.dwFileVersionMS & 0xFFFF}.{ffi.dwFileVersionLS >> 16}.{ffi.dwFileVersionLS & 0xFFFF}"
 else:
     file_version = "3.5.1.0"
 
