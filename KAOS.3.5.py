@@ -18,6 +18,7 @@ from freezegun import freeze_time
 import qrcode
 from PIL import ImageTk
 import traceback
+import time
 
 def resource_path(relative_path):
     try:
@@ -90,6 +91,7 @@ else:
     file_version = "3.5.1.0"
 
 from Automation import AutomationHandler
+import time
 
 # Error handling ---------------------------------------------------
 error_occurred = False
@@ -697,6 +699,8 @@ if __name__ == "__main__":
         os.makedirs(error_log_dir)
     log_file = os.path.join('error_log', log_filename)
     logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(message)s', encoding='utf-8')
+    # ファイルバージョンをログに記録
+    logging.info(f"Version: {file_version}")
     
     try:
         app = MainApplication()
