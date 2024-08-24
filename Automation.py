@@ -13,7 +13,6 @@ import sys
 import logging
 from openpyxl import load_workbook
 import pandas as pd
-import numpy as np
 import winreg
 import configparser
 import json
