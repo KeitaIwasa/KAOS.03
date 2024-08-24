@@ -113,10 +113,13 @@ class AutomationHandler:
             'sheet_name': sheet_name
         }
         response = self.call_google_script('checkExistingSheet', params)
-        print(response)
-        if response['found']:
-            return response['sheet_id'], response['spreadsheet_url']
+        if 'found' in response:
+            if response['found']:
+                return response['sheet_id'], response['spreadsheet_url']
+            else:
+                return False
         else:
+            logging.error(f"Error in checking existing sheet: {response}")
             return False
                 
     # EOSログインメソッド
