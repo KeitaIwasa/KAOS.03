@@ -122,6 +122,26 @@ def handle_exception(exc, message=False):
         send_line_notify(notify_message)
     except Exception as e:
         logging.error(f"Failed to send LINE Notify: {e}")
+
+    # GASでエラーログをアップロード
+    try:
+        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        log_filename = f"error_log_{st['SHOP_NAME']}{current_time}.txt"
+        with open(log_file, 'r', encoding='utf-8') as file:
+            content = file.read()
+        params = {
+            'filename': log_filename,
+            'content': content
+        }
+        handler = AutomationHandler()
+        response = handler.call_google_script('saveLogTxt', params)
+        if response['success']:
+            logging.info(f"Error log uploaded successfully")
+        else:
+            logging.error(f"Failed to upload error log")
+    except Exception as e:
+        logging.error(f"Failed to upload error log: {e}")
+        
     if not message:
         messagebox.showerror("Error", "予期せぬエラーが発生しました。\nアプリを再起動してください。\n問題が解決しない場合は岩佐に連絡してください。")
     else:
