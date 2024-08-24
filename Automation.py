@@ -42,8 +42,8 @@ class AutomationHandler:
 
     def check_update(self, store_name, current_version):
         try:
-            response = requests.get("https://support.iwasadigital.com/kaos/versions.json")
-            print(response.json())
+            response = requests.get("https://support.iwasadigital.com/kaos/version.json")
+            logging.info(response.json())
             if response.status_code == 200:
                 versions = response.json()
                 latest_version = versions.get(store_name)
