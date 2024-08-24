@@ -9,6 +9,8 @@ VersionInfoDescription=kAOSセットアッププログラム
 DefaultDirName={pf}\KAOS
 VersionInfoVersion=3.6.0.0
 AppCopyright=岩佐デジタル
+CloseApplications=yes             ; アプリケーションを閉じてからインストール
+RestartApplications=yes           ; インストール後にアプリケーションを再起動
 
 ; Languages セクション: 使用する言語を指定します
 [Languages]
