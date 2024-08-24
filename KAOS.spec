@@ -12,7 +12,7 @@ a = Analysis(
         ('setup/KAOS_icon.ico', 'setup'),
         ('setup/sheet_icon.png', 'setup'),
         ('setup/setting_icon.png', 'setup'),
-        ('setup/岩佐LINEのQR.png', 'setup')
+        ('setup/KAOS_Support_QR_resized.png', 'setup')
     ],
     hiddenimports=[
         'chardet',
