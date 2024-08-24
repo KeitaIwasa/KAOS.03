@@ -9,6 +9,7 @@ import os
 import logging
 import logging.handlers
 import sys
+import ctypes
 import http.client
 import urllib.parse
 import configparser
@@ -17,6 +18,7 @@ from freezegun import freeze_time
 import qrcode
 from PIL import ImageTk
 import traceback
+import time
 
 def resource_path(relative_path):
     try:
@@ -45,8 +47,51 @@ with open(r'setup/config.ini', 'r', encoding='utf-8') as file:
     config.read_file(file)
 st = config['Settings']
 
+# ファイルバージョンの取得
+if getattr(sys, 'frozen', False):
+    # VS_FIXEDFILEINFO 構造体の定義
+    class VS_FIXEDFILEINFO(ctypes.Structure):
+        _fields_ = [
+            ("dwSignature", ctypes.c_uint32),
+            ("dwStrucVersion", ctypes.c_uint32),
+            ("dwFileVersionMS", ctypes.c_uint32),
+            ("dwFileVersionLS", ctypes.c_uint32),
+            ("dwProductVersionMS", ctypes.c_uint32),
+            ("dwProductVersionLS", ctypes.c_uint32),
+            ("dwFileFlagsMask", ctypes.c_uint32),
+            ("dwFileFlags", ctypes.c_uint32),
+            ("dwFileOS", ctypes.c_uint32),
+            ("dwFileType", ctypes.c_uint32),
+            ("dwFileSubtype", ctypes.c_uint32),
+            ("dwFileDateMS", ctypes.c_uint32),
+            ("dwFileDateLS", ctypes.c_uint32),
+        ]
+
+    file_path = sys.executable
+    size = ctypes.windll.version.GetFileVersionInfoSizeW(file_path, None)
+    if size == 0:
+        raise ctypes.WinError()
+
+    res = ctypes.create_string_buffer(size)
+    success = ctypes.windll.version.GetFileVersionInfoW(file_path, 0, size, res)
+    if not success:
+        raise ctypes.WinError()
+
+    # VerQueryValueW で VS_FIXEDFILEINFO を取得
+    p_val = ctypes.c_void_p()
+    l_val = ctypes.c_uint()
+    success = ctypes.windll.version.VerQueryValueW(res, "\\", ctypes.byref(p_val), ctypes.byref(l_val))
+    if not success:
+        raise ctypes.WinError()
+
+    # ポインタを VS_FIXEDFILEINFO にキャスト
+    ffi = ctypes.cast(p_val.value, ctypes.POINTER(VS_FIXEDFILEINFO)).contents
+    file_version = f"{ffi.dwFileVersionMS >> 16}.{ffi.dwFileVersionMS & 0xFFFF}.{ffi.dwFileVersionLS >> 16}.{ffi.dwFileVersionLS & 0xFFFF}"
+else:
+    file_version = "3.5.1.0"
 
 from Automation import AutomationHandler
+import time
 
 # Error handling ---------------------------------------------------
 error_occurred = False
@@ -162,7 +207,17 @@ class MainApplication(tk.Tk):
         self.today_int = None
 
         self.handler = AutomationHandler()
+
         if st['comp'] == "True":
+            # アップデートチェック
+            need_update, latest_version = self.handler.check_update(st['SHOP_NAME'], file_version)
+            if need_update:
+                if messagebox.askyesno("アップデートの確認", "新しいバージョンがあります。アップデートしますか？"):
+                    logging.info("ユーザーがアップデートを承認しました。")
+                    self.handler.execute_update(latest_version)
+                else:
+                    logging.info("ユーザーがアップデートをキャンセルしました。")
+            
             self.show_frame(Page_1)
         else:
             self.show_frame(Page_0)        
@@ -304,6 +359,10 @@ class Page_0(tk.Frame):
         self.eos_password_entry = tk.Entry(self.sub_frame, width=25)
         self.eos_password_entry.grid(row=2, column=1, padx=10, pady=5)
         self.eos_password_entry.insert(0, df_EOS_PW)
+
+        # ファイルバージョンの表示
+        self.version_label = tk.Label(self.sub_frame, text=f"バージョン: {file_version}")
+        self.version_label.grid(row=3, column=0, columnspan=2, pady=10)
 
         # 保存ボタン
         self.save_button = tk.Button(self.sub_frame, text="保存", command=lambda:self.save_settings(parent))
@@ -640,6 +699,8 @@ if __name__ == "__main__":
         os.makedirs(error_log_dir)
     log_file = os.path.join('error_log', log_filename)
     logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(message)s', encoding='utf-8')
+    # ファイルバージョンをログに記録
+    logging.info(f"Version: {file_version}")
     
     try:
         app = MainApplication()
