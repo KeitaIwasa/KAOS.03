@@ -42,7 +42,8 @@ class AutomationHandler:
 
     def check_update(self, store_name, current_version):
         try:
-            response = requests.get("https://support.iwasadigital.com/updates/kaos/versions.json")
+            response = requests.get("https://support.iwasadigital.com/kaos/version.json")
+            logging.info(response.json())
             if response.status_code == 200:
                 versions = response.json()
                 latest_version = versions.get(store_name)
@@ -59,8 +60,8 @@ class AutomationHandler:
         
     def execute_update(self, latest_version):
         try:
-            url = f"https://support.iwasadigital.com/updates/kaos/KAOS_Update.{latest_version}.exe"
-            installer_path = f"./KAOS_Update.{latest_version}.exe"
+            url = f"https://support.iwasadigital.com/updates/kaos/KAOS_setup.{latest_version}.exe"
+            installer_path = f"./KAOS_setup.{latest_version}.exe"
             response = requests.get(url)
             with open(installer_path, 'wb') as file:
                 file.write(response.content)
@@ -112,9 +113,13 @@ class AutomationHandler:
             'sheet_name': sheet_name
         }
         response = self.call_google_script('checkExistingSheet', params)
-        if response['found']:
-            return response['sheet_id'], response['spreadsheet_url']
+        if 'found' in response:
+            if response['found']:
+                return response['sheet_id'], response['spreadsheet_url']
+            else:
+                return False
         else:
+            logging.error(f"Error in checking existing sheet: {response}")
             return False
                 
     # EOSログインメソッド

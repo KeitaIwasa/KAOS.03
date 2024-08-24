@@ -231,6 +231,7 @@ class MainApplication(tk.Tk):
         if st['comp'] == "True":
             # アップデートチェック
             need_update, latest_version = self.handler.check_update(st['SHOP_NAME'], file_version)
+            print(need_update, latest_version)
             if need_update:
                 if messagebox.askyesno("アップデートの確認", "新しいバージョンがあります。アップデートしますか？"):
                     logging.info("ユーザーがアップデートを承認しました。")
