@@ -3,12 +3,20 @@
 ; Setup セクション: インストーラーの基本情報を設定します
 [Setup]
 AppName=KAOS                     
-AppVerName=KAOS 3.5.1            
-OutputBaseFilename=KAOS_setup.3.5.1
+AppVerName=KAOS 3.6.0            
+OutputBaseFilename=KAOS_setup.3.6.0
 VersionInfoDescription=kAOSセットアッププログラム
 DefaultDirName={pf}\KAOS
-VersionInfoVersion=3.5.1.0
+VersionInfoVersion=3.6.0.0
 AppCopyright=岩佐デジタル
+DefaultGroupName=KAOS
+DisableStartupPrompt=yes          ; スタートアップ時のプロンプトを無効化
+AllowCancelDuringInstall=no       ; インストール中のキャンセルを無効化
+AlwaysRestart=no                  ; インストール後に再起動を要求しない
+CloseApplications=yes             ; アプリケーションを閉じてからインストール
+RestartApplications=yes           ; インストール後にアプリケーションを再起動
+SilentInstall=yes                 ; サイレントインストールを有効化
+SilentUninstall=yes               ; サイレントアンインストールを有効化
 
 ; Languages セクション: 使用する言語を指定します
 [Languages]
