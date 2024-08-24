@@ -4,7 +4,7 @@
 [Setup]
 AppName=KAOS                     
 AppVerName=KAOS 3.6.0            
-OutputBaseFilename=KAOS_setup.3.6.0
+OutputBaseFilename=KAOS_Update.3.6.0
 VersionInfoDescription=kAOSセットアッププログラム
 DefaultDirName={pf}\KAOS
 VersionInfoVersion=3.6.0.0
