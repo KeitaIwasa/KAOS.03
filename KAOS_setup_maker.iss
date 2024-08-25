@@ -3,11 +3,11 @@
 ; Setup セクション: インストーラーの基本情報を設定します
 [Setup]
 AppName=KAOS                     
-AppVerName=KAOS 3.6.0            
-OutputBaseFilename=KAOS_setup.3.6.0
+AppVerName=KAOS 3.6.1            
+OutputBaseFilename=KAOS_setup.3.6.1.7
 VersionInfoDescription=kAOSセットアッププログラム
 DefaultDirName={pf}\KAOS
-VersionInfoVersion=3.6.0.0
+VersionInfoVersion=3.6.1.7
 AppCopyright=岩佐デジタル
 CloseApplications=yes
 RestartApplications=yes
@@ -31,3 +31,7 @@ Source: "dist\KAOS\_internal\*"; DestDir: "{app}\_internal"; Flags: ignoreversio
 [Icons]
 Name: "{group}\KAOS"; Filename: "{app}\KAOS.exe"
 Name: "{commondesktop}\自動発注システムKAOS"; Filename: "{app}\KAOS.exe"
+
+; Run セクション: アプリをインストール後に自動で起動します。
+[Run]
+Filename: "{app}\KAOS.exe"; Flags: nowait
