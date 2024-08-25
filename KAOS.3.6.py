@@ -18,6 +18,7 @@ from freezegun import freeze_time
 import qrcode
 from PIL import ImageTk
 import traceback
+import subprocess
 import time
 
 def resource_path(relative_path):
@@ -91,7 +92,6 @@ else:
     file_version = "3.5.1.0"
 
 from Automation import AutomationHandler
-import time
 
 # Error handling ---------------------------------------------------
 error_occurred = False
@@ -194,6 +194,9 @@ class MainApplication(tk.Tk):
         # ユーザーに確認メッセージを表示
         if messagebox.askyesno("終了確認", "本当に終了しますか？\n終了すると、自動で開かれたEOSのページも閉じます。"):
             self.handler.destroy_chrome()
+            self.destroy()  # ウィンドウを閉じる
+            self.quit()
+
             if not error_occurred:
                 try:
                     logging.shutdown() 
@@ -202,13 +205,10 @@ class MainApplication(tk.Tk):
                     logging.error(f"ログファイルの削除に失敗しました: {e}")
             if os.path.exists(f'{self.handler.download_folder_path()}/{self.today_str_csv}_発注.CSV'):
                 os.remove(f'{self.handler.download_folder_path()}/{self.today_str_csv}_発注.CSV')
-            self.destroy()  # ウィンドウを閉じる
-            self.quit()
 
     def __init__(self):
         super().__init__()
         self.title("コメダ自動発注システム KAOS")
-        self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.center_window(self, 600, 350)
         self.iconbitmap(resource_path('setup/KAOS_icon.ico'))
         self.option_add("*Font", ("Yu Gothic UI", 11))
@@ -230,17 +230,14 @@ class MainApplication(tk.Tk):
 
         if st['comp'] == "True":
             # アップデートチェック
-            need_update, latest_version = self.handler.check_update(st['SHOP_NAME'], file_version)
-            print(need_update, latest_version)
+            need_update, self.latest_version = self.handler.check_update(st['SHOP_NAME'], file_version)
             if need_update:
-                if messagebox.askyesno("アップデートの確認", "新しいバージョンがあります。アップデートしますか？"):
-                    logging.info("ユーザーがアップデートを承認しました。")
-                    self.handler.execute_update(latest_version)
-                else:
-                    logging.info("ユーザーがアップデートをキャンセルしました。")
-            
-            self.show_frame(Page_1)
+                self.show_frame(Page_Update)
+            else:
+                self.protocol("WM_DELETE_WINDOW", self.on_close)
+                self.show_frame(Page_1)
         else:
+            self.protocol("WM_DELETE_WINDOW", self.on_close)
             self.show_frame(Page_0)        
 
 class Text_and_Button_Page(tk.Frame):
@@ -342,6 +339,36 @@ class ToolTip():
         self.tw = None
         if tw:
             tw.destroy()
+
+class Page_Update(Progress_Page):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.label_p.config(text="アップデートを準備中…")
+        threading.Thread(target=self.ask_update, args=(parent,), daemon=True).start()
+        
+    def ask_update(self, parent):
+        if messagebox.askyesno("アップデートの確認", "新しいバージョンがあります。今すぐアップデートしますか？\nアップデートには2～3分かかる場合があります。"):
+            logging.info("ユーザーがアップデートを承認しました。") 
+            installer_path = f"setup/KAOS_setup.{parent.latest_version}.exe"
+            download_success = parent.handler.execute_update(parent.latest_version)
+            self.progress.stop()
+            if download_success:
+                # インストーラの実行
+                time.sleep(1)
+                subprocess.Popen([installer_path, "/SILENT"])
+                self.destroy()  # ウィンドウを閉じる
+                self.quit()
+            else:
+                logging.error("アップデートに失敗しました。")
+                messagebox.showerror("アップデート失敗", "アップデートに失敗しました。お手数ですが、公式サポートにお問い合わせください。")
+                parent.protocol("WM_DELETE_WINDOW", parent.on_close)
+                parent.show_frame(Page_1)
+        else:
+            logging.info("ユーザーがアップデートをキャンセルしました。")
+    
+            parent.protocol("WM_DELETE_WINDOW", parent.on_close)
+            parent.show_frame(Page_1)
+
 
 class Page_0(tk.Frame):
     def __init__(self, parent):
@@ -487,7 +514,7 @@ class Page_OS(Progress_Page):
     def __init__(self, parent):
         super().__init__(parent)
         self.label_p.config(text="発注書の原本を開いています...")
-        self.after(0, self.start_open_original_sheet(parent))
+        self.start_open_original_sheet(parent)
 
     def start_open_original_sheet(self, parent):
         threading.Thread(target=thread_with_error_handle, args=(self.open_original_sheet, parent,),daemon=True).start()

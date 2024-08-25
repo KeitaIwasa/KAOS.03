@@ -19,7 +19,7 @@ import json
 import requests
 from datetime import datetime, timedelta
 import random
-import subprocess
+import glob
 
 # 設定ファイルの読み込み
 config = configparser.ConfigParser()
@@ -58,19 +58,19 @@ class AutomationHandler:
             logging.error(f"Error during version check: {e}")
             return False, None
         
-    def execute_update(self, latest_version):
+    def download_updater(self, latest_version, installer_path):
         try:
-            url = f"https://support.iwasadigital.com/updates/kaos/KAOS_setup.{latest_version}.exe"
-            installer_path = f"./KAOS_setup.{latest_version}.exe"
+            files = glob.glob('setup/KAOS_setup.*.exe')
+            for file in files:
+                os.remove(file)
+            url = f"https://support.iwasadigital.com/kaos/{latest_version}/KAOS_setup.{latest_version}.exe"
             response = requests.get(url)
+            logging.info(f"Response status code: {response.status_code}")
             with open(installer_path, 'wb') as file:
                 file.write(response.content)
-            # インストーラの実行とKAOS.exeの終了
-            subprocess.Popen([installer_path, "/silent"])
-            os._exit(0)  # KAOS.exeを終了する
-
+            return True
         except Exception as e:
-            logging.error(f"Error during update execution: {e}")
+            logging.error(f"Error during dounloading updater: {e}")
             return False
     
     def call_google_script(self, function_name, params):
