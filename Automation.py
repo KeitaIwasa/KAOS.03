@@ -40,10 +40,11 @@ class AutomationHandler:
         self.script_url = 'https://script.google.com/macros/s/AKfycbyixzT47V81tUQG2DgmO-YbPEdsm08m0CZxESsYeQziZ7SfS-n6xe7NN3gs4nb7CST6/exec'
         self.driver = None
 
-    def check_update(self, store_name, current_version):
+    def check_update(self, store_name, current_version): # return need_update, self.latest_version
         try:
             response = requests.get("https://support.iwasadigital.com/kaos/version.json")
             logging.info(response.json())
+            print(response.status_code)
             if response.status_code == 200:
                 versions = response.json()
                 latest_version = versions.get(store_name)
@@ -54,6 +55,9 @@ class AutomationHandler:
             else:
                 logging.error(f"Error during version check: {response.text}")
                 return False, None
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error during version check: {e}")
+            return False, 404
         except Exception as e:
             logging.error(f"Error during version check: {e}")
             return False, None
