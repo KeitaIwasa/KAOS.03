@@ -55,7 +55,7 @@ class AutomationHandler:
             else:
                 logging.error(f"Error during version check: {response.text}")
                 return False, None
-        except requests.exceptions.RequestException as e:
+        except requests.exceptions.RequestException as e: # 通信エラー
             logging.error(f"Error during version check: {e}")
             return False, 404
         except Exception as e:

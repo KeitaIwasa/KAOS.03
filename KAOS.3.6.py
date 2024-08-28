@@ -245,8 +245,8 @@ class MainApplication(tk.Tk):
             elif self.latest_version == 404:
                 # インターネットが接続されているか確認
                 if not self.check_internet():
-                    messagebox.showerror("インターネット接続不良", "インターネットが接続されていない可能性があります。インターネット接続を確認して起動し直してください。")
-                    self.destroy()  # ウィンドウを閉じる
+                    messagebox.showerror("インターネット接続不良", "インターネットが接続されていない可能性があります。\nインターネット接続を確認して起動し直してください。")
+                    self.destroy()  # OKをクリックしたらウィンドウを閉じる
                     self.quit()
                 else:
                     self.protocol("WM_DELETE_WINDOW", self.on_close)
