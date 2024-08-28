@@ -206,6 +206,15 @@ class MainApplication(tk.Tk):
             if os.path.exists(f'{self.handler.download_folder_path()}/{self.today_str_csv}_発注.CSV'):
                 os.remove(f'{self.handler.download_folder_path()}/{self.today_str_csv}_発注.CSV')
 
+    def check_internet(self):
+        try:
+            conn = http.client.HTTPSConnection("www.google.com", timeout=5)
+            conn.request("HEAD", "/")
+            conn.close()
+            return True # インターネット接続がある
+        except Exception as e:
+            return False # インターネット接続がない
+    
     def __init__(self):
         super().__init__()
         self.title("コメダ自動発注システム KAOS")
@@ -233,6 +242,15 @@ class MainApplication(tk.Tk):
             need_update, self.latest_version = self.handler.check_update(st['SHOP_NAME'], file_version)
             if need_update:
                 self.show_frame(Page_Update)
+            elif self.latest_version == 404:
+                # インターネットが接続されているか確認
+                if not self.check_internet():
+                    messagebox.showerror("インターネット接続不良", "インターネットが接続されていない可能性があります。インターネット接続を確認して起動し直してください。")
+                    self.destroy()  # ウィンドウを閉じる
+                    self.quit()
+                else:
+                    self.protocol("WM_DELETE_WINDOW", self.on_close)
+                    self.show_frame(Page_1)
             else:
                 self.protocol("WM_DELETE_WINDOW", self.on_close)
                 self.show_frame(Page_1)
@@ -347,27 +365,29 @@ class Page_Update(Progress_Page):
         threading.Thread(target=self.ask_update, args=(parent,), daemon=True).start()
         
     def ask_update(self, parent):
-        if messagebox.askyesno("アップデートの確認", "新しいバージョンがあります。今すぐアップデートしますか？\nアップデートには2～3分かかる場合があります。"):
-            logging.info("ユーザーがアップデートを承認しました。") 
-            installer_path = f"setup/KAOS_setup.{parent.latest_version}.exe"
-            download_success = parent.handler.execute_update(parent.latest_version)
-            self.progress.stop()
-            if download_success:
-                # インストーラの実行
-                time.sleep(1)
-                subprocess.Popen([installer_path, "/SILENT"])
-                self.destroy()  # ウィンドウを閉じる
-                self.quit()
+        try:
+            if messagebox.askyesno("アップデートの確認", "新しいバージョンがあります。今すぐアップデートしますか？\nアップデートには2～3分かかる場合があります。"):
+                logging.info("ユーザーがアップデートを承認しました。") 
+                installer_path = f"setup/KAOS_setup.{parent.latest_version}.exe"
+                download_success = parent.handler.download_updater(parent.latest_version, installer_path)
+                self.progress.stop()
+                if download_success:
+                    # インストーラの実行
+                    time.sleep(1)
+                    subprocess.Popen([installer_path, "/SILENT"])
+                    self.destroy()  # ウィンドウを閉じる
+                    self.quit()
+                else:
+                    logging.error("アップデートに失敗しました。")
+                    messagebox.showerror("アップデート失敗", "アップデートに失敗しました。お手数ですが、公式サポートにお問い合わせください。")
+                    parent.protocol("WM_DELETE_WINDOW", parent.on_close)
+                    parent.show_frame(Page_1)
             else:
-                logging.error("アップデートに失敗しました。")
-                messagebox.showerror("アップデート失敗", "アップデートに失敗しました。お手数ですが、公式サポートにお問い合わせください。")
+                logging.info("ユーザーがアップデートをキャンセルしました。") 
                 parent.protocol("WM_DELETE_WINDOW", parent.on_close)
                 parent.show_frame(Page_1)
-        else:
-            logging.info("ユーザーがアップデートをキャンセルしました。")
-    
-            parent.protocol("WM_DELETE_WINDOW", parent.on_close)
-            parent.show_frame(Page_1)
+        except Exception as e:
+            handle_exception(e)
 
 
 class Page_0(tk.Frame):
