@@ -20,6 +20,7 @@ from PIL import ImageTk
 import traceback
 import subprocess
 import time
+import winreg as reg
 
 def resource_path(relative_path):
     try:
@@ -539,13 +540,29 @@ class Page_OS(Progress_Page):
     def start_open_original_sheet(self, parent):
         threading.Thread(target=thread_with_error_handle, args=(self.open_original_sheet, parent,),daemon=True).start()
 
+    def get_chrome_path():
+        try:
+            # レジストリキーのパス
+            reg_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe"
+            reg_key = reg.OpenKey(reg.HKEY_LOCAL_MACHINE, reg_path)
+            chrome_path, _ = reg.QueryValueEx(reg_key, "")
+            reg.CloseKey(reg_key)
+            return chrome_path
+        except Exception as e:
+            return None
+
     def open_original_sheet(self, parent):
         try:
             original_sheet_url = parent.handler.get_original_sheet()
             if original_sheet_url == False:
                 raise Exception("Original sheet not found")
             else:
-                webbrowser.open(original_sheet_url)
+                try:
+                    chrome_path = self.get_chrome_path()
+                    subprocess.run([chrome_path, original_sheet_url])
+                except Exception as e:
+                    logging.warning(f"Failed to open original sheet with Chrome: {e}")
+                    webbrowser.open(original_sheet_url)
             parent.show_frame(Page_1)
         except Exception as e:
             handle_exception(e, message="発注書の原本が見つかりません。「お問い合わせ」から担当者に連絡してください。")
