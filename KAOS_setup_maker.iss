@@ -3,11 +3,11 @@
 ; Setup セクション: インストーラーの基本情報を設定します
 [Setup]
 AppName=KAOS                     
-AppVerName=KAOS 3.6.1            
-OutputBaseFilename=KAOS_setup.3.6.2.0
+AppVerName=KAOS 3.6.2           
+OutputBaseFilename=KAOS_setup.3.6.2.1
 VersionInfoDescription=kAOSセットアッププログラム
 DefaultDirName={pf}\KAOS
-VersionInfoVersion=3.6.2.0
+VersionInfoVersion=3.6.2.1
 AppCopyright=岩佐デジタル
 CloseApplications=yes
 RestartApplications=yes
