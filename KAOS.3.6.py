@@ -540,7 +540,7 @@ class Page_OS(Progress_Page):
     def start_open_original_sheet(self, parent):
         threading.Thread(target=thread_with_error_handle, args=(self.open_original_sheet, parent,),daemon=True).start()
 
-    def get_chrome_path():
+    def get_chrome_path(self):
         try:
             # レジストリキーのパス
             reg_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe"
@@ -559,7 +559,8 @@ class Page_OS(Progress_Page):
             else:
                 try:
                     chrome_path = self.get_chrome_path()
-                    subprocess.run([chrome_path, original_sheet_url])
+                    subprocess.Popen([chrome_path, original_sheet_url])
+                    logging.info(f"succeded to open original sheet with Chrome")
                 except Exception as e:
                     logging.warning(f"Failed to open original sheet with Chrome: {e}")
                     webbrowser.open(original_sheet_url)
