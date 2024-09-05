@@ -7,12 +7,10 @@ name = "pypi"
 selenium = "*"
 openpyxl = "*"
 pandas = "*"
-numpy = "*"
-winreg = "*"
-configparser = "*"
 requests = "*"
-freezegun = "*"
 qrcode = "*"
+Pillow = "*"
+freezegun = "*"
 
 [dev-packages]
 
