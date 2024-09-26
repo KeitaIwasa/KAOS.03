@@ -372,6 +372,12 @@ class AutomationHandler:
         self.driver.find_element(By.CLASS_NAME, 'menupng2').click()
         input_order = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//a[@accesskey='3']")))
         input_order.click()
+        time.sleep(0.1)
+
+        # お知らせが表示される場合は✕ボタン
+        while len(self.driver.find_elements(By.XPATH, value="//button[@title='Close']"))>0 :
+            self.driver.find_element(By.XPATH, value="//button[@title='Close']").click()
+            time.sleep(0.05)
 
         WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'scode'))) 
         
