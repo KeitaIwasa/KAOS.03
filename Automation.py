@@ -142,7 +142,12 @@ class AutomationHandler:
         except TimeoutException: # 別ページでEOSが開かれていた場合、TimeoutExceptionとなる
             self.driver.find_element(By.ID, 'btnNext').click() #「開く」ボタンクリック
         WebDriverWait(self.driver, 15).until(EC.url_to_be('https://eos-st.komeda.co.jp/st/osirase'))
-
+        logging.info('Logged in to EOS successfully.')
+        try:
+            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//button[@title='Close']")))
+        except TimeoutException:
+            logging.error("TimeoutException: 'Close' button not found.")
+        logging.info('detected dialog')
         # お知らせが表示される場合は✕ボタン
         while len(self.driver.find_elements(By.XPATH, value="//button[@title='Close']"))>0 :
             self.driver.find_element(By.XPATH, value="//button[@title='Close']").click()
