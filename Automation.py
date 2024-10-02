@@ -374,10 +374,17 @@ class AutomationHandler:
         input_order.click()
 
         WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'scode'))) 
+        logging.info('scode loaded')
         
-        # お知らせが表示される場合は✕ボタン
+        # お知らせが表示される場合は✕ボタン(締め時間変更後は必要なし)
+        try:
+            WebDriverWait(self.driver, 2).until(EC.presence_of_element_located((By.XPATH, "//button[@title='Close']")))
+            logging.info('Dialog found')
+        except TimeoutException:
+            logging.info('No dialog found')
         while len(self.driver.find_elements(By.XPATH, value="//button[@title='Close']"))>0 :
             self.driver.find_element(By.XPATH, value="//button[@title='Close']").click()
+            logging.info('Dialog closed')
             time.sleep(0.05)
 
         
