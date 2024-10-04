@@ -147,7 +147,7 @@ class AutomationHandler:
                 break
             except TimeoutException:
                 if len(self.driver.find_elements(By.XPATH, value="//div[contains(text(), 'ユーザーまたはパスワードが一致しませんでした')]"))>0 :
-                    return False, 'ユーザーまたはパスワードが一致しませんでした'
+                    return "E0007" # ログインエラー
         WebDriverWait(self.driver, 1).until(EC.url_to_be('https://eos-st.komeda.co.jp/st/osirase'))
 
         # お知らせが表示される場合は✕ボタン
@@ -155,7 +155,7 @@ class AutomationHandler:
             self.driver.find_element(By.XPATH, value="//button[@title='Close']").click()
             time.sleep(0.05)
 
-        return True
+        return "200" # OK
             
     def download_folder_path(self):
         sub_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders'
@@ -164,7 +164,9 @@ class AutomationHandler:
         return download_folder
             
     def download_csv(self, today_str_csv, today_int):
-        self.login_eos(st['EOS_ID'], st['EOS_PW']) #EOSログインメソッド↑
+        login_status_code = self.login_eos(st['EOS_ID'], st['EOS_PW']) #EOSログインメソッド↑
+        if login_status_code != "200":
+            return login_status_code # ログインエラー(E0007:IDorパスワード誤り)
         self.csv_path = f'{self.download_folder_path()}/{today_str_csv}_発注.CSV'
         self.csv_path_nonfood = f'{self.download_folder_path()}/{today_str_csv}_発注 (1).CSV'
         max_retry_download = 15
@@ -207,14 +209,14 @@ class AutomationHandler:
             # 前日の発注明細をロード
             while retry_download <= max_retry_download:
                 if os.path.exists(self.csv_path):
-                    break
+                    return "200" # OK
                 elif retry_download == max_retry_download:
-                    return False    
+                    raise Exception("retry_download reached max_retry_download")
                 else:
                     retry_download += 1
                     time.sleep(0.1)
         except:
-            return False
+            return "E0005" # ダウンロードエラー
 
         if today_int.weekday() in {3, 5}:#木夜、土夜の場合は非食品の発注明細も取得・合成
             if os.path.exists(self.csv_path_nonfood):
