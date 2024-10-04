@@ -141,12 +141,21 @@ class AutomationHandler:
             self.driver.find_element(By.ID, 'btnLogin').click() #「ログイン」ボタンクリック    
         except TimeoutException: # 別ページでEOSが開かれていた場合、TimeoutExceptionとなる
             self.driver.find_element(By.ID, 'btnNext').click() #「開く」ボタンクリック
-        WebDriverWait(self.driver, 15).until(EC.url_to_be('https://eos-st.komeda.co.jp/st/osirase'))
+        for _ in range(4):
+            try:
+                WebDriverWait(self.driver, 2).until(EC.url_to_be('https://eos-st.komeda.co.jp/st/osirase'))
+                break
+            except TimeoutException:
+                if len(self.driver.find_elements(By.XPATH, value="//div[contains(text(), 'ユーザーまたはパスワードが一致しませんでした')]"))>0 :
+                    return False, 'ユーザーまたはパスワードが一致しませんでした'
+        WebDriverWait(self.driver, 1).until(EC.url_to_be('https://eos-st.komeda.co.jp/st/osirase'))
 
         # お知らせが表示される場合は✕ボタン
         while len(self.driver.find_elements(By.XPATH, value="//button[@title='Close']"))>0 :
             self.driver.find_element(By.XPATH, value="//button[@title='Close']").click()
             time.sleep(0.05)
+
+        return True
             
     def download_folder_path(self):
         sub_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders'
