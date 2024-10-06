@@ -571,10 +571,7 @@ class Page_2i(Progress_Page): # 既存の発注書の存在確認
     def __init__(self, parent):
         super().__init__(parent)
         self.label_p.config(text="作成済みの発注書が存在するか確認中...")
-        if parent.night_order == True:
-            parent.today_order_file = f'発注書_{parent.today_str}PM'
-        else:
-            parent.today_order_file = f'発注書_{parent.today_str}AM'
+        parent.today_order_file = f'発注書_{parent.today_str}'
         self.after(0, self.start_check_form(parent))
 
     def start_check_form(self, parent):
