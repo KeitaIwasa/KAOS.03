@@ -227,7 +227,6 @@ class MainApplication(tk.Tk):
         self.frames = {}
 
         #インスタンス変数を初期化
-        self.night_order = None
         self.delivery_date_int =None
         self.today_real_int = None
         self.today_str = None
@@ -492,7 +491,6 @@ class Page_1(Text_and_Button_Page):
         #発注開始の確認
         current_time = datetime.now().time()
         if current_time >= datetime.strptime("06:00", "%H:%M").time() and current_time <= datetime.strptime("23:55", "%H:%M").time():
-            parent.night_order = True
             parent.delivery_date_int = parent.today_int + timedelta(days=2) #納品日(明後日)
             delivery_date_str = parent.delivery_date_int.strftime('%Y-%m-%d')
             self.label1.config(text=f'{parent.today_str}の発注作業を開始します。納品は{delivery_date_str}です。')
@@ -605,13 +603,9 @@ class Page_4(Progress_Page): #発注書作成
         threading.Thread(target=thread_with_error_handle, args=(self.setup_form, parent,),daemon=True).start()
 
     def setup_form(self, parent):
-        download_success = False 
-        if parent.night_order == True:
-            download_status = parent.handler.download_csv(parent.today_str_csv, parent.today_int)
-        if parent.night_order == False:
-            download_status = "200"
+        download_status = parent.handler.download_csv(parent.today_str_csv, parent.today_int)
         if download_status=="200":
-            generate_result = parent.handler.generate_form(parent.delivery_date_int, parent.today_str, parent.night_order)
+            generate_result = parent.handler.generate_form(parent.delivery_date_int, parent.today_str)
             if generate_result == False:
                 raise Exception
             else:
@@ -763,9 +757,6 @@ class Page_8(List_Page):
         self.listbox_frame.pack_forget()
         todo_list = []
         todo_list.append('EOSで「発注手続きへ」をクリックして、発注確定・印刷する。')
-
-        if st['SHOP_NAME'] in {"自由が丘メープル通り", "岩佐Surface"}:
-            todo_list.append('たまごを忘れず発注する。')
         todo_list.append('発注が終了したら、右上の✕ボタンで終了してください。')
 
         text = "\n".join(f"{index + 1}. {todo}" for index, todo in enumerate(todo_list))

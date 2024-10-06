@@ -311,18 +311,14 @@ class AutomationHandler:
                 time.sleep(5)
         raise Exception("All retry attempts failed")
            
-    def generate_form(self, delivery_date_int, today_str, night_order):
-        if night_order:
-            with open(self.csv_path, 'r', encoding='utf-8') as file:
-                csv_data = file.read()
-        else:
-            csv_data = False
+    def generate_form(self, delivery_date_int, today_str):
+        with open(self.csv_path, 'r', encoding='utf-8') as file:
+            csv_data = file.read()
 
         params = {
             'delivery_date_int': delivery_date_int.isoformat(),
             'csv_data': csv_data,
             'today_str': today_str,
-            'night_order': night_order,
             'shop_name': st['SHOP_NAME']
         }
 
