@@ -144,7 +144,7 @@ def handle_exception(exc, message=False):
         logging.error(f"Failed to upload error log: {e}")
         
     if not message:
-        messagebox.showerror("Error", "予期せぬエラーが発生しました。\nアプリを再起動してください。\n問題が解決しない場合は「お問い合わせ」から担当者に連絡してください。")
+        messagebox.showerror("Error", "予期せぬエラーが発生しました。\nアプリを再起動してください。\n問題が解決しない場合は「ヘルプ」から担当者に連絡してください。")
     else:
         messagebox.showerror("Error", message)
 
@@ -161,7 +161,7 @@ class MainApplication(tk.Tk):
         frame = cont(self)
         frame.grid(row=0, column=0, sticky='nsew')
         frame.grid_propagate(False)
-        contact_button = tk.Button(frame, text="お問い合わせ", command=self.show_qr)
+        contact_button = tk.Button(frame, text="ヘルプ", command=self.show_qr)
         contact_button.place(relx=1.0, rely=1.0, anchor='se', x=-10, y=-10)
         frame.tkraise()
 
@@ -566,7 +566,7 @@ class Page_OS(Progress_Page):
                     webbrowser.open(original_sheet_url)
             parent.show_frame(Page_1)
         except Exception as e:
-            handle_exception(e, message="発注書の原本が見つかりません。「お問い合わせ」から担当者に連絡してください。")
+            handle_exception(e, message="発注書の原本が見つかりません。「ヘルプ」から担当者に連絡してください。")
 
 class Page_2(Text_and_Button_Page):
     def __init__(self, parent):
@@ -627,11 +627,11 @@ class Page_4(Progress_Page): #発注書作成
             else:
                 parent.sheet_id, parent.sheet_url = generate_result
             self.progress.stop()
-            parent.show_frame(Page_6)
-        elif download_status=="E0005":
-            parent.show_frame(Page_5)
+            parent.show_frame(Page_6)            
         elif download_status=="E0007":
             handle_exception(Exception("ユーザーまたはパスワードが不一致"), message="EOSのユーザーIDまたはパスワードが一致しませんでした。\nKAOSの最初の画面の⚙のアイコンから、ユーザーIDとパスワードを確認してください。")
+        else:
+            parent.show_frame(Page_5)
 
 class Page_5(Text_and_Button_Page): #発注明細ダウンロード失敗
     def __init__(self, parent):
@@ -721,7 +721,9 @@ class Page_7(Progress_Page): #発注数取得・入力
             input_order_success, parent.error_ls = parent.handler.input_order_in_site()
             self.progress.stop()
             if input_order_success: 
-                parent.show_frame(Page_8)         
+                parent.show_frame(Page_8)   
+            elif parent.error_ls == "E0007":
+                handle_exception(Exception("ユーザーまたはパスワードが不一致"), message="EOSのユーザーIDまたはパスワードが一致しませんでした。\nKAOSの最初の画面の⚙のアイコンから、ユーザーIDとパスワードを確認してください。")   
         else: 
             parent.NaN_ls = NaN_ls
             self.progress.stop()

@@ -147,9 +147,10 @@ class AutomationHandler:
                 break
             except TimeoutException:
                 if len(self.driver.find_elements(By.XPATH, value="//div[contains(text(), 'ユーザーまたはパスワードが一致しませんでした')]"))>0 :
+                    logging.warning('入力エラーダダイアログdetected')
                     return "E0007" # ログインエラー
         WebDriverWait(self.driver, 1).until(EC.url_to_be('https://eos-st.komeda.co.jp/st/osirase'))
-
+        logging.info('EOSログイン成功')
         # お知らせが表示される場合は✕ボタン
         while len(self.driver.find_elements(By.XPATH, value="//button[@title='Close']"))>0 :
             self.driver.find_element(By.XPATH, value="//button[@title='Close']").click()
@@ -165,11 +166,11 @@ class AutomationHandler:
             
     def download_csv(self, today_str_csv, today_int):
         login_status_code = self.login_eos(st['EOS_ID'], st['EOS_PW']) #EOSログインメソッド↑
+        logging.info(f'login_status_code(download_csv): {login_status_code}')
         if login_status_code != "200":
             return login_status_code # ログインエラー(E0007:IDorパスワード誤り)
         self.csv_path = f'{self.download_folder_path()}/{today_str_csv}_発注.CSV'
         self.csv_path_nonfood = f'{self.download_folder_path()}/{today_str_csv}_発注 (1).CSV'
-        max_retry_download = 15
         try:
             if not os.path.exists(self.csv_path):           
                 # 左メニューの発注照会をクリック
@@ -205,6 +206,7 @@ class AutomationHandler:
                 time.sleep(0.3)  # 少し待機
                 self.driver.execute_script("arguments[0].click();", btn_yes)
 
+            max_retry_download = 15
             retry_download = 0
             # 前日の発注明細をロード
             while retry_download <= max_retry_download:
@@ -374,8 +376,10 @@ class AutomationHandler:
                 return Name_with_NaN, self.input_df_nonfood
             
     def input_order_in_site(self):
-        self.login_eos(st['EOS_ID'], st['EOS_PW'])
-
+        login_status_code = self.login_eos(st['EOS_ID'], st['EOS_PW'])
+        logging.info(f'login_status_code(input_order_in_site): {login_status_code}')
+        if login_status_code != "200":
+            return False, login_status_code
         #ウィンドウを最大化
         self.driver.maximize_window()
 
