@@ -618,7 +618,9 @@ class Page_4(Progress_Page): #発注書作成
         download_success = False 
         if parent.night_order == True:
             download_status = parent.handler.download_csv(parent.today_str_csv, parent.today_int)
-        if download_status=="200" or (parent.night_order == False):
+        if parent.night_order == False:
+            download_status = "200"
+        if download_status=="200":
             generate_result = parent.handler.generate_form(parent.delivery_date_int, parent.today_str, parent.night_order)
             if generate_result == False:
                 raise Exception
@@ -629,7 +631,7 @@ class Page_4(Progress_Page): #発注書作成
         elif download_status=="E0005":
             parent.show_frame(Page_5)
         elif download_status=="E0007":
-            handle_exception(Exception("ユーザーまたはパスワードが不一致"), message="EOSのユーザーIDまたはパスワードが一致しませんでした。\nKAOSの設定画面で、ユーザーIDとパスワードを確認してください。")
+            handle_exception(Exception("ユーザーまたはパスワードが不一致"), message="EOSのユーザーIDまたはパスワードが一致しませんでした。\nKAOSの最初の画面の⚙のアイコンから、ユーザーIDとパスワードを確認してください。")
 
 class Page_5(Text_and_Button_Page): #発注明細ダウンロード失敗
     def __init__(self, parent):
