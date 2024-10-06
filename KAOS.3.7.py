@@ -490,22 +490,15 @@ class Page_1(Text_and_Button_Page):
         yesterday_int = parent.today_int - timedelta(days=1)
         parent.yesterday_str = yesterday_int.strftime('%Y-%m-%d') 
         #発注開始の確認
-        if datetime.now().hour >= 14: #夜発注14時以降
+        current_time = datetime.now().time()
+        if current_time >= datetime.strptime("06:00", "%H:%M").time() and current_time <= datetime.strptime("23:55", "%H:%M").time():
             parent.night_order = True
-            parent.delivery_date_int = parent.today_int + timedelta(days=2) #納品日(夜発注)明後日
+            parent.delivery_date_int = parent.today_int + timedelta(days=2) #納品日(明後日)
             delivery_date_str = parent.delivery_date_int.strftime('%Y-%m-%d')
-            self.label1.config(text=f'{parent.today_str}の夜分の発注作業を開始します。納品は{delivery_date_str}です。')
+            self.label1.config(text=f'{parent.today_str}の発注作業を開始します。納品は{delivery_date_str}です。')
             parent.today_real_int = parent.today_int #本日の本当の日付   
             self.button1.config(text="OK", command=lambda: parent.show_frame(Page_2))     
-        elif datetime.now().hour < 12 : #朝発注12時まで
-            parent.night_order = False
-            parent.delivery_date_int = parent.today_int + timedelta(days=1) #納品日(朝発注)明日
-            delivery_date_str = parent.delivery_date_int.strftime('%Y-%m-%d')
-            self.label1.config(text=f'{parent.today_str}の朝分の発注作業を開始します。納品は{delivery_date_str}です。')
-            parent.today_real_int = parent.today_int #本日の本当の日付
-            parent.today_int = parent.today_int - timedelta(days=1) #朝発注の場合は日付を-1
-            self.button1.config(text="OK", command=lambda: parent.show_frame(Page_2))
-        else :
+        else:
             self.label1.config(text="EOSの発注停止中のため、発注できません。")
             self.button1.config(text="発注を中止", command=parent.quit)
         if parent.today_real_int:
@@ -525,7 +518,7 @@ class Page_1(Text_and_Button_Page):
         dt = datetime.strptime(input_date, "%Y-%m-%d %H:%M:%S")
         with freeze_time(dt):
             # 固定された現在時刻を表示
-            print("固定された現在時刻: ", datetime.now())
+            logging.info("固定された現在時刻: ", datetime.now())
             parent.show_frame(Page_1) 
 
     def open_original_sheet(self, parent):
