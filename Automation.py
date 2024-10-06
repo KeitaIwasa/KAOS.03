@@ -140,6 +140,7 @@ class AutomationHandler:
             self.driver.find_element(By.ID, 'btnLogin').click() #「ログイン」ボタンクリック    
         except TimeoutException: # 別ページでEOSが開かれていた場合、TimeoutExceptionとなる
             self.driver.find_element(By.ID, 'btnNext').click() #「開く」ボタンクリック
+            logging.info('TimeoutException')
         for _ in range(4):
             try:
                 WebDriverWait(self.driver, 2).until(EC.url_to_be('https://eos-st.komeda.co.jp/st/osirase'))
@@ -346,7 +347,7 @@ class AutomationHandler:
         self.driver.find_element(By.CLASS_NAME, 'menupng2').click()
         input_order = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, "//a[@accesskey='3']")))
         input_order.click()
-
+        
         WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'scode'))) 
         logging.info('scode loaded')
         
