@@ -169,7 +169,6 @@ class AutomationHandler:
         if login_status_code != "200":
             return login_status_code # ログインエラー(E0007:IDorパスワード誤り)
         self.csv_path = f'{self.download_folder_path()}/{today_str_csv}_発注.CSV'
-        self.csv_path_nonfood = f'{self.download_folder_path()}/{today_str_csv}_発注 (1).CSV'
         try:
             if not os.path.exists(self.csv_path): 
                 # 左メニューの発注照会をクリック
@@ -242,6 +241,20 @@ class AutomationHandler:
         except:
             return "E0005" # ダウンロードエラー
         
+        next_day = today_int + timedelta(days=1)
+        next_day_str = next_day.strftime('%Y-%m-%d(%a)')
+        try:
+            df = pd.read_csv(self.csv_path)
+        except FileNotFoundError:
+            logging.error(f"Error: {self.csv_path} が見つかりませんでした。")
+            return "E0006"
+        # K列の値が翌日のデータをフィルタリング
+        filtered_df = df[df['納品日'] == next_day_str]
+
+        # CSVファイルに上書き保存
+        filtered_df.to_csv(self.csv_path, index=False)
+        logging.info(f"{self.csv_path} にフィルタリング結果を上書き保存しました。")
+
         self.driver.close()
         self.driver.quit() 
         self.driver = None  
