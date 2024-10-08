@@ -135,10 +135,12 @@ class AutomationHandler:
             self.driver.get('https://eos-st.komeda.co.jp/st/') #ログインページにアクセス           
         # EOSにログイン
         try:
+            self.driver.get('https://eos-st.komeda.co.jp/st/')
             WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'txtUserId'))).send_keys(user_id) #ユーザーID入力
             WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'txtPassword'))).send_keys(password) #パスワード入力
             self.driver.find_element(By.ID, 'btnLogin').click() #「ログイン」ボタンクリック    
         except TimeoutException: # 別ページでEOSが開かれていた場合、TimeoutExceptionとなる
+            self.driver.get('https://eos-st.komeda.co.jp/st/')
             self.driver.find_element(By.ID, 'btnNext').click() #「開く」ボタンクリック
             logging.info('TimeoutException')
         for _ in range(4):
@@ -184,7 +186,7 @@ class AutomationHandler:
                 self.driver.execute_script("arguments[0].click();", inquiry_element)  # JavaScriptでクリックを強制実行
 
                 # 前日の日付を計算
-                yesterday_int = today_int - timedelta(days=1)
+                yesterday_int = today_int - timedelta(days=2)
                 # 前日の日付を文字列に変換
                 yesterday_str = yesterday_int.strftime('%d')
                 # 前日の日付の番号を取得（"06" -> "6"のように先頭のゼロを取り除く）
@@ -195,16 +197,6 @@ class AutomationHandler:
                 select_from_date = self.driver.find_element(By.ID, 'selectFromDay')
                 select_from = Select(select_from_date)
                 select_from.select_by_value(yesterday_number)
-
-                # 明細の日付範囲のエンド
-                select_to_date = self.driver.find_element(By.ID, 'selectToDay')
-                select_to = Select(select_to_date)
-                select_to.select_by_value(yesterday_number)
-
-                # 未納品に限定
-                select_kubun = self.driver.find_element(By.ID, 'selectDeliveryKubun')
-                select_kubun_nonfood = Select(select_kubun)
-                select_kubun_nonfood.select_by_value("2") # 2:未納品
 
                 # 発注明細を照会
                 inquiry_button = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.ID, 'inquiryButton')))
