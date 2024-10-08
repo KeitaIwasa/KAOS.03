@@ -225,7 +225,7 @@ class AutomationHandler:
             # 前日の発注明細をロード
             while retry_download <= max_retry_download:
                 if os.path.exists(self.csv_path):
-                    return "200" # OK
+                    break
                 elif retry_download == max_retry_download:
                     raise Exception("retry_download reached max_retry_download")
                 else:
@@ -235,17 +235,21 @@ class AutomationHandler:
             return "E0005" # ダウンロードエラー
         
         next_day = today_int + timedelta(days=1)
-        next_day_str = next_day.strftime('%Y-%m-%d(%a)')
+        days_jp = ['月', '火', '水', '木', '金', '土', '日']
+        next_day_str = next_day.strftime(f'%Y-%m-%d({days_jp[next_day.weekday()]})')
+        logging.info(f"next_day_str: {next_day_str}")
         try:
             df = pd.read_csv(self.csv_path)
+            logging.info(df)
         except FileNotFoundError:
             logging.error(f"Error: {self.csv_path} が見つかりませんでした。")
             return "E0006"
         # K列の値が翌日のデータをフィルタリング
         filtered_df = df[df['納品日'] == next_day_str]
+        logging.info(filtered_df)
 
         # CSVファイルに上書き保存
-        filtered_df.to_csv(self.csv_path, index=False)
+        filtered_df.to_csv(self.csv_path, index=False, encoding='utf-8-sig')
         logging.info(f"{self.csv_path} にフィルタリング結果を上書き保存しました。")
 
         self.driver.close()
@@ -253,9 +257,9 @@ class AutomationHandler:
         self.driver = None  
 
         if os.path.exists(self.csv_path):
-            return True
+            return "200" # OK
         else:
-            return False
+            return "E0005" # ダウンロードエラー
 
     def execute_with_retry(self, function_name, params, retries=3, timeout=120):
         for attempt in range(retries):
