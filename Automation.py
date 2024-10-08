@@ -135,10 +135,12 @@ class AutomationHandler:
             self.driver.get('https://eos-st.komeda.co.jp/st/') #ログインページにアクセス           
         # EOSにログイン
         try:
+            self.driver.get('https://eos-st.komeda.co.jp/st/')
             WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'txtUserId'))).send_keys(user_id) #ユーザーID入力
             WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'txtPassword'))).send_keys(password) #パスワード入力
             self.driver.find_element(By.ID, 'btnLogin').click() #「ログイン」ボタンクリック    
         except TimeoutException: # 別ページでEOSが開かれていた場合、TimeoutExceptionとなる
+            self.driver.get('https://eos-st.komeda.co.jp/st/')
             self.driver.find_element(By.ID, 'btnNext').click() #「開く」ボタンクリック
             logging.info('TimeoutException')
         for _ in range(4):
@@ -184,7 +186,7 @@ class AutomationHandler:
                 self.driver.execute_script("arguments[0].click();", inquiry_element)  # JavaScriptでクリックを強制実行
 
                 # 前日の日付を計算
-                yesterday_int = today_int - timedelta(days=1)
+                yesterday_int = today_int - timedelta(days=2)
                 # 前日の日付を文字列に変換
                 yesterday_str = yesterday_int.strftime('%d')
                 # 前日の日付の番号を取得（"06" -> "6"のように先頭のゼロを取り除く）
@@ -195,16 +197,6 @@ class AutomationHandler:
                 select_from_date = self.driver.find_element(By.ID, 'selectFromDay')
                 select_from = Select(select_from_date)
                 select_from.select_by_value(yesterday_number)
-
-                # 明細の日付範囲のエンド
-                select_to_date = self.driver.find_element(By.ID, 'selectToDay')
-                select_to = Select(select_to_date)
-                select_to.select_by_value(yesterday_number)
-
-                # 未納品に限定
-                select_kubun = self.driver.find_element(By.ID, 'selectDeliveryKubun')
-                select_kubun_nonfood = Select(select_kubun)
-                select_kubun_nonfood.select_by_value("2") # 2:未納品
 
                 # 発注明細を照会
                 inquiry_button = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.ID, 'inquiryButton')))
@@ -233,7 +225,7 @@ class AutomationHandler:
             # 前日の発注明細をロード
             while retry_download <= max_retry_download:
                 if os.path.exists(self.csv_path):
-                    return "200" # OK
+                    break
                 elif retry_download == max_retry_download:
                     raise Exception("retry_download reached max_retry_download")
                 else:
@@ -243,17 +235,21 @@ class AutomationHandler:
             return "E0005" # ダウンロードエラー
         
         next_day = today_int + timedelta(days=1)
-        next_day_str = next_day.strftime('%Y-%m-%d(%a)')
+        days_jp = ['月', '火', '水', '木', '金', '土', '日']
+        next_day_str = next_day.strftime(f'%Y-%m-%d({days_jp[next_day.weekday()]})')
+        logging.info(f"next_day_str: {next_day_str}")
         try:
             df = pd.read_csv(self.csv_path)
+            logging.info(df)
         except FileNotFoundError:
             logging.error(f"Error: {self.csv_path} が見つかりませんでした。")
             return "E0006"
         # K列の値が翌日のデータをフィルタリング
         filtered_df = df[df['納品日'] == next_day_str]
+        logging.info(filtered_df)
 
         # CSVファイルに上書き保存
-        filtered_df.to_csv(self.csv_path, index=False)
+        filtered_df.to_csv(self.csv_path, index=False, encoding='utf-8-sig')
         logging.info(f"{self.csv_path} にフィルタリング結果を上書き保存しました。")
 
         self.driver.close()
@@ -261,9 +257,9 @@ class AutomationHandler:
         self.driver = None  
 
         if os.path.exists(self.csv_path):
-            return True
+            return "200" # OK
         else:
-            return False
+            return "E0005" # ダウンロードエラー
 
     def execute_with_retry(self, function_name, params, retries=3, timeout=120):
         for attempt in range(retries):
