@@ -246,7 +246,7 @@ class AutomationHandler:
             logging.error(f"Error: {self.csv_path} が見つかりませんでした。")
             return "E0006"
         # 納品予定日が翌日のデータをフィルタリング
-        filtered_df = df[df['納品予定日'] == next_day_str]
+        filtered_df = df[(df['納品予定日'] == next_day_str) | (df['納品日'] == next_day_str)] # 納品予定日に
         logging.info(filtered_df)
 
         # CSVファイルに上書き保存
