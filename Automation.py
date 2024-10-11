@@ -236,7 +236,8 @@ class AutomationHandler:
         
         next_day = today_int + timedelta(days=1)
         days_jp = ['月', '火', '水', '木', '金', '土', '日']
-        next_day_str = next_day.strftime(f'%Y-%m-%d({days_jp[next_day.weekday()]})') # 例：2024-10-13(日)
+        next_day_str = next_day.strftime('%Y-%m-%d') + f'({days_jp[next_day.weekday()]})'  # 日本語曜日を手動で追加
+
         logging.info(f"next_day_str: {next_day_str}")
         try:
             df = pd.read_csv(self.csv_path)
