@@ -236,7 +236,7 @@ class AutomationHandler:
         
         next_day = today_int + timedelta(days=1)
         days_jp = ['月', '火', '水', '木', '金', '土', '日']
-        next_day_str = next_day.strftime(f'%Y-%m-%d({days_jp[next_day.weekday()]})')
+        next_day_str = next_day.strftime(f'%Y-%m-%d({days_jp[next_day.weekday()]})') # 例：2024-10-13(日)
         logging.info(f"next_day_str: {next_day_str}")
         try:
             df = pd.read_csv(self.csv_path)
@@ -244,8 +244,8 @@ class AutomationHandler:
         except FileNotFoundError:
             logging.error(f"Error: {self.csv_path} が見つかりませんでした。")
             return "E0006"
-        # K列の値が翌日のデータをフィルタリング
-        filtered_df = df[df['納品日'] == next_day_str]
+        # 納品予定日が翌日のデータをフィルタリング
+        filtered_df = df[df['納品予定日'] == next_day_str]
         logging.info(filtered_df)
 
         # CSVファイルに上書き保存
