@@ -316,7 +316,7 @@ class AutomationHandler:
                     self.input_df['セット'] = self.input_df['セット'].astype(int)
 
                 # 非食品
-                if values_nonfood:
+                if values_nonfood is not None:
                     max_columns_nonfood = len(values_nonfood[0])
                     data_nonfood = [row + [None] * (max_columns_nonfood - len(row)) for row in values_nonfood[1:]]
                     df_nonfood = pd.DataFrame(data_nonfood, columns=values_nonfood[0])
