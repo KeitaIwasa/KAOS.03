@@ -687,21 +687,35 @@ class Page_7(Progress_Page): #発注数取得・入力
     def start_confirm_synch(self, parent):
         threading.Thread(target=thread_with_error_handle, args=(self.confirm_googledive_sinch, parent,),daemon=True).start()
 
-def confirm_googledive_sinch(self, parent):
-    NaN_ls, df_nonfood = parent.handler.get_spreadsheet(parent.sheet_id) #戻り値は現在庫が入力されてない商品名のリストと非食品のdf          
-    if NaN_ls is False:
-        self.progress.stop()
-        self.progress.pack_forget()
-        self.label_p.config(text='データの取得に失敗しました。') 
-        self.button2 = tk.Button(self, text="再試行", command=lambda: parent.show_frame(Page_7))     
-        self.button2.pack()
-        return
-    
-    if df_nonfood is not False:
-        if df_nonfood.shape[0] == 0 and parent.today_int.weekday() in {1, 3, 5} and parent.nonfood0_ok == False:
+    def confirm_googledive_sinch(self, parent):
+        NaN_ls, df_nonfood = parent.handler.get_spreadsheet(parent.sheet_id) #戻り値は現在庫が入力されてない商品名のリストと非食品のdf          
+        if NaN_ls is False:
             self.progress.stop()
             self.progress.pack_forget()
-            parent.show_frame(Page_7ii)
+            self.label_p.config(text='データの取得に失敗しました。') 
+            self.button2 = tk.Button(self, text="再試行", command=lambda: parent.show_frame(Page_7))     
+            self.button2.pack()
+            return
+        
+        if df_nonfood is not False:
+            if df_nonfood.shape[0] == 0 and parent.today_int.weekday() in {1, 3, 5} and parent.nonfood0_ok == False:
+                self.progress.stop()
+                self.progress.pack_forget()
+                parent.show_frame(Page_7ii)
+            else:
+                if not NaN_ls:
+                    self.label_p.config(text="EOSへ発注数を入力中...")
+                    parent.attributes("-topmost", True)
+                    input_order_success, parent.error_ls = parent.handler.input_order_in_site()
+                    self.progress.stop()
+                    if input_order_success: 
+                        parent.show_frame(Page_8)   
+                    elif parent.error_ls == "E0007":
+                        handle_exception(Exception("ユーザーまたはパスワードが不一致"), message="EOSのユーザーIDまたはパスワードが一致しませんでした。\nKAOSの最初の画面の⚙のアイコンから、ユーザーIDとパスワードを確認してください。")   
+                else: 
+                    parent.NaN_ls = NaN_ls
+                    self.progress.stop()
+                    parent.show_frame(Page_7i)    
         else:
             if not NaN_ls:
                 self.label_p.config(text="EOSへ発注数を入力中...")
@@ -715,21 +729,7 @@ def confirm_googledive_sinch(self, parent):
             else: 
                 parent.NaN_ls = NaN_ls
                 self.progress.stop()
-                parent.show_frame(Page_7i)    
-    else:
-        if not NaN_ls:
-            self.label_p.config(text="EOSへ発注数を入力中...")
-            parent.attributes("-topmost", True)
-            input_order_success, parent.error_ls = parent.handler.input_order_in_site()
-            self.progress.stop()
-            if input_order_success: 
-                parent.show_frame(Page_8)   
-            elif parent.error_ls == "E0007":
-                handle_exception(Exception("ユーザーまたはパスワードが不一致"), message="EOSのユーザーIDまたはパスワードが一致しませんでした。\nKAOSの最初の画面の⚙のアイコンから、ユーザーIDとパスワードを確認してください。")   
-        else: 
-            parent.NaN_ls = NaN_ls
-            self.progress.stop()
-            parent.show_frame(Page_7i)
+                parent.show_frame(Page_7i)
 
 class Page_7i(List_Page):
     def __init__(self, parent):
