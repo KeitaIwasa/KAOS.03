@@ -295,8 +295,8 @@ class AutomationHandler:
         if 'error' in response:
             raise Exception(f"Error in getting spreadsheet: {response['error']}")
         else:
-            values_food = response['values_food']
-            values_nonfood = response['values_nonfood']
+            values_food = response.get('values_food')
+            values_nonfood = response.get('values_nonfood', None)
             # 指定した複数の列をDataFrameに変換
             if not values_food:
                 print('No data found in the sheet.')
@@ -308,6 +308,10 @@ class AutomationHandler:
                 df_food = pd.DataFrame(data, columns=values_food[0])
                 self.input_df = df_food[['商品名', 'セット', '商品コード', '現在庫', '発注数']]
                 self.input_df.replace('', None, inplace=True)
+                self.input_df.dropna(subset=['商品コード'], inplace=True)
+                self.input_df['商品コード'] = self.input_df['商品コード'].astype(str).str.strip()
+                self.input_df['商品コード'] = pd.to_numeric(self.input_df['商品コード'], errors='coerce')
+                self.input_df.dropna(subset=['商品コード'], inplace=True)
                 Name_with_NaN = self.input_df[self.input_df['現在庫'].isna()]['商品名'].tolist()
                 if len(Name_with_NaN) == 0:
                     self.input_df['商品コード'] = self.input_df['商品コード'].astype(int)
@@ -315,20 +319,23 @@ class AutomationHandler:
                     self.input_df['発注数'] = self.input_df['発注数'].astype(int)
                     self.input_df['セット'] = self.input_df['セット'].astype(int)
 
-                #非食品
-                max_columns_nonfood = len(values_nonfood[1])
-                data_nonfood = [row + [None] * (max_columns_nonfood - len(row)) for row in values_nonfood[1:]]
-                df_nonfood = pd.DataFrame(data_nonfood, columns=values_nonfood[0])
-                self.input_df_nonfood = df_nonfood[['商品名', '商品コード', '発注数']]
-                self.input_df_nonfood['発注数'] = self.input_df_nonfood['発注数'].astype(str).str.strip()
-                self.input_df_nonfood['発注数'] = pd.to_numeric(self.input_df_nonfood['発注数'], errors='coerce')
-                self.input_df_nonfood.dropna(subset=['発注数'], inplace=True)
-                self.input_df_nonfood = self.input_df_nonfood[self.input_df_nonfood['発注数'] != 0]
-                if not self.input_df_nonfood.empty:
-                    self.input_df_nonfood.reset_index(drop=True, inplace=True)
-                    self.input_df_nonfood.replace('', None, inplace=True)
-                    self.input_df_nonfood['商品コード'] = self.input_df_nonfood['商品コード'].astype(int)
-                    self.input_df_nonfood['発注数'] = self.input_df_nonfood['発注数'].astype(int)
+                # 非食品
+                if values_nonfood is not None:
+                    max_columns_nonfood = len(values_nonfood[0])
+                    data_nonfood = [row + [None] * (max_columns_nonfood - len(row)) for row in values_nonfood[1:]]
+                    df_nonfood = pd.DataFrame(data_nonfood, columns=values_nonfood[0])
+                    self.input_df_nonfood = df_nonfood[['商品名', '商品コード', '発注数']]
+                    self.input_df_nonfood['発注数'] = self.input_df_nonfood['発注数'].astype(str).str.strip()
+                    self.input_df_nonfood['発注数'] = pd.to_numeric(self.input_df_nonfood['発注数'], errors='coerce')
+                    self.input_df_nonfood.dropna(subset=['発注数'], inplace=True)
+                    self.input_df_nonfood = self.input_df_nonfood[self.input_df_nonfood['発注数'] != 0]
+                    if not self.input_df_nonfood.empty:
+                        self.input_df_nonfood.reset_index(drop=True, inplace=True)
+                        self.input_df_nonfood.replace('', None, inplace=True)
+                        self.input_df_nonfood['商品コード'] = self.input_df_nonfood['商品コード'].astype(int)
+                        self.input_df_nonfood['発注数'] = self.input_df_nonfood['発注数'].astype(int)
+                else:#非食品のシートがない場合
+                    self.input_df_nonfood = False
                     
                 return Name_with_NaN, self.input_df_nonfood
             
@@ -360,8 +367,14 @@ class AutomationHandler:
             time.sleep(0.05)
 
         
-        
-        input_df_tuple = (self.input_df, self.input_df_nonfood)
+        if isinstance(self.input_df_nonfood, bool):
+            input_df_tuple = (self.input_df,)
+        elif isinstance(self.input_df_nonfood, pd.DataFrame):
+            input_df_tuple = (self.input_df, self.input_df_nonfood)
+        else:
+            input_df_tuple = (self.input_df,)
+            logging.warning('input_df_nonfood is neither bool nor DataFrame')
+
         error_ls = [] #入力エラーの空リストを作成
         for df in input_df_tuple:
             if df is self.input_df:
@@ -370,7 +383,7 @@ class AutomationHandler:
                 print(f'df is False')
                 continue
             else:
-                print(f'df is else')
+                print(f'df is nonfood')
                 WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'pushDay2')))
                 self.driver.find_elements(By.CLASS_NAME, 'pushDay2')[0].click()
 
