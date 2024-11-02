@@ -139,9 +139,17 @@ class AutomationHandler:
         # EOSにログイン
         try:
             self.driver.get('https://eos-st.komeda.co.jp/st/')
-            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'txtUserId'))).send_keys(user_id) #ユーザーID入力
-            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'txtPassword'))).send_keys(password) #パスワード入力
-            self.driver.find_element(By.ID, 'btnLogin').click() #「ログイン」ボタンクリック    
+            if len(self.driver.find_elements(By.ID, 'txtUserId')) > 0: # ログインページが開かれていない場合
+                WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'txtUserId'))).send_keys(user_id) #ユーザーID入力
+                WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'txtPassword'))).send_keys(password) #パスワード入力
+                self.driver.find_element(By.ID, 'btnLogin').click() #「ログイン」ボタンクリック
+            elif len(self.driver.find_elements(By.ID, 'btnNext')) > 0:
+                logging.info('TimeoutException')
+                self.driver.find_element(By.ID, 'btnNext').click() 
+            elif len(self.driver.find_elements(By.CLASS_NAME, 'btn')) > 0:
+                logging.info('500 INTERNAL_SERVER_ERROR 内部サーバーエラー') 
+                self.driver.find_element(By.CLASS_NAME, 'btn').click() 
+                return self.login_eos(user_id, password)
         except TimeoutException: # 別ページでEOSが開かれていた場合、TimeoutExceptionとなる
             self.driver.get('https://eos-st.komeda.co.jp/st/')
             self.driver.find_element(By.ID, 'btnNext').click() #「開く」ボタンクリック
