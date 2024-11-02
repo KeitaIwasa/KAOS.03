@@ -4,10 +4,10 @@
 [Setup]
 AppName=KAOS                     
 AppVerName=KAOS 3.7.0
-OutputBaseFilename=KAOS_setup.3.7.0.5
+OutputBaseFilename=KAOS_setup.3.7.0.6
 VersionInfoDescription=kAOSセットアッププログラム
 DefaultDirName={pf}\KAOS
-VersionInfoVersion=3.7.0.5
+VersionInfoVersion=3.7.0.6
 AppCopyright=岩佐デジタル
 CloseApplications=yes
 RestartApplications=yes

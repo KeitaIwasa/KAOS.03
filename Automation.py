@@ -48,7 +48,7 @@ class AutomationHandler:
             if response.status_code == 200:
                 versions = response.json()
                 if store_name not in versions:
-                    latest_version = versions.get('else')
+                    latest_version = versions.get('default')
                 else:
                     latest_version = versions.get(store_name)
                 if latest_version and latest_version != current_version:
