@@ -187,16 +187,31 @@ class AutomationHandler:
 
                 # 前日の日付を計算
                 yesterday_int = today_int - timedelta(days=2)
-                # 前日の日付を文字列に変換
-                yesterday_str = yesterday_int.strftime('%d')
-                # 前日の日付の番号を取得（"06" -> "6"のように先頭のゼロを取り除く）
-                yesterday_number = str(int(yesterday_str))
+                # 前日のdを文字列に変換
+                yesterday_day = str(int(yesterday_int.strftime('%d')))
+                today_day = str(int(today_int.strftime('%d')))
+                # 前日のmを文字列に変換
+                yesterday_month = str(int(yesterday_int.strftime('%m')))
+                today_month = str(int(today_int.strftime('%m')))
+                # 前日のyを文字列に変換
+                yesterday_year = yesterday_int.strftime('%Y')
+
 
                 # 明細の日付範囲のスタート
                 WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'selectFromDay')))
                 select_from_date = self.driver.find_element(By.ID, 'selectFromDay')
                 select_from = Select(select_from_date)
-                select_from.select_by_value(yesterday_number)
+                select_from.select_by_value(yesterday_day)
+
+                # 明細の月範囲のスタート
+                if today_day in ["1", "2"]:
+                    select_from_month = self.driver.find_element(By.ID, 'selectFromMonth')
+                    select_from = Select(select_from_month)
+                    select_from.select_by_value(yesterday_month)
+                    if today_month == "1":
+                        select_from_year = self.driver.find_element(By.ID, 'selectFromYear')
+                        select_from = Select(select_from_year)
+                        select_from.select_by_value(yesterday_year)
 
                 # 発注明細を照会
                 inquiry_button = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.ID, 'inquiryButton')))
