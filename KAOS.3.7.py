@@ -622,7 +622,7 @@ class Page_5(Text_and_Button_Page): #発注明細ダウンロード失敗
         super().__init__(parent)
         parent.attributes("-topmost", True)
         parent.attributes("-topmost", False)
-        self.label1.config(text="発注明細のダウンロードに失敗しました。手動で前日の発注明細をダウンロードしてください。(ファイル名は変えないでください。)")
+        self.label1.config(text="発注明細のダウンロードに失敗しました。手動で「おととい～きのう」の発注明細をEOSからダウンロードしてください。")
         self.button1.config(text="ダウンロードした", command=lambda: self.check_download(parent))        
 
     def check_download(self, parent): 

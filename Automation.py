@@ -251,14 +251,18 @@ class AutomationHandler:
             # 前日の発注明細をロード
             while retry_download <= max_retry_download:
                 if os.path.exists(self.csv_path):
-                    break
+                    return "200" # OK
                 elif retry_download == max_retry_download:
                     raise Exception("retry_download reached max_retry_download")
                 else:
                     retry_download += 1
                     time.sleep(0.1)
         except:
-            return "E0005" # ダウンロードエラー
+            if len(self.driver.find_elements(By.XPATH, "//h4[contains(text(), '500')]")) > 0:
+                logging.error("500 Internal Server Error detected")
+                return "E505"
+            else:
+                return "E0005" # ダウンロードエラー
         
         next_day = today_int + timedelta(days=1)
         days_jp = ['月', '火', '水', '木', '金', '土', '日']
