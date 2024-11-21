@@ -480,6 +480,18 @@ class Page_1(Text_and_Button_Page):
         sheet_button.place(relx=0, rely=0, anchor='nw', x=41, y=10)
         sheet_button_tooltip = ToolTip(sheet_button, "発注書[原本]を編集") 
 
+        #お知らせ
+        notice_frame = tk.Frame(self, relief=tk.GROOVE, bd=2)
+        notice_frame.pack(before=self.button1, pady=(0, 25))
+        notice_title = tk.Label(notice_frame, text="お知らせ")
+        notice_title.pack(anchor='w')
+        notice_box = tk.Text(notice_frame, width=48, height=4.5, relief=tk.FLAT)
+        notice_list = ["お知らせテストだよ", "あああああああああああああああああああああああああああああああああああああああああああああああ"]
+        for notice in notice_list:
+            notice_box.insert(tk.END, f"{notice}\n")
+        notice_box.pack()
+        notice_box.config(state=tk.DISABLED)
+
         parent.attributes("-topmost", True)
         parent.attributes("-topmost", False)
         # 本日の日付を取得 as YYYY-MM-DD
@@ -495,7 +507,7 @@ class Page_1(Text_and_Button_Page):
             delivery_date_str = parent.delivery_date_int.strftime('%Y-%m-%d')
             self.label1.config(text=f'{parent.today_str}の発注作業を開始します。納品は{delivery_date_str}です。')
             parent.today_real_int = parent.today_int #本日の本当の日付   
-            self.button1.config(text="OK", command=lambda: parent.show_frame(Page_2))     
+            self.button1.config(text="発注開始", command=lambda: parent.show_frame(Page_2))     
         else:
             self.label1.config(text="EOSの発注停止中のため、発注できません。")
             self.button1.config(text="発注を中止", command=parent.quit)
@@ -798,4 +810,3 @@ if __name__ == "__main__":
         app.mainloop()
     except Exception as e:
         handle_exception(e)
-        
