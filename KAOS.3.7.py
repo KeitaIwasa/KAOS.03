@@ -466,6 +466,14 @@ EOS_PW = {eos_password}
 class Page_1(Text_and_Button_Page):
     def __init__(self, parent):
         super().__init__(parent)
+
+        # 本日の日付を取得 as YYYY-MM-DD
+        parent.today_int = datetime.today()
+        parent.today_str = parent.today_int.strftime('%Y-%m-%d')
+        # 前日の日付を取得 as YYYY-MM-DD
+        yesterday_int = parent.today_int - timedelta(days=1)
+        parent.yesterday_str = yesterday_int.strftime('%Y-%m-%d') 
+
         #設定ボタン
         setting_icon = tk.PhotoImage(file=resource_path('setup/setting_icon.png')).subsample(2,2)
         setting_button = tk.Button(self, image=setting_icon, compound="top", cursor="hand2", command=lambda: parent.show_frame(Page_0))
@@ -481,25 +489,26 @@ class Page_1(Text_and_Button_Page):
         sheet_button_tooltip = ToolTip(sheet_button, "発注書[原本]を編集") 
 
         #お知らせ
-        notice_frame = tk.Frame(self, relief=tk.GROOVE, bd=2)
-        notice_frame.pack(before=self.button1, pady=(0, 25))
-        notice_title = tk.Label(notice_frame, text="お知らせ")
-        notice_title.pack(anchor='w')
-        notice_box = tk.Text(notice_frame, width=48, height=4.5, relief=tk.FLAT)
-        notice_list = ["お知らせテストだよ", "あああああああああああああああああああああああああああああああああああああああああああああああ"]
-        for notice in notice_list:
-            notice_box.insert(tk.END, f"{notice}\n")
-        notice_box.pack()
-        notice_box.config(state=tk.DISABLED)
+        if hasattr(parent, 'notice_list'):
+            notice_list = parent.notice_list
+        else:
+            notice_list = parent.handler.get_notices(file_version, parent.today_int)
+            parent.notice_list = notice_list
+
+        if notice_list:
+            notice_frame = tk.Frame(self, relief=tk.GROOVE, bd=2)
+            notice_frame.pack(before=self.button1, pady=(0, 25))
+            notice_title = tk.Label(notice_frame, text="お知らせ")
+            notice_title.pack(anchor='w')
+            notice_box = tk.Text(notice_frame, width=48, height=4.5, relief=tk.FLAT)
+            for notice in notice_list:
+                notice_box.insert(tk.END, f"{notice}\n")
+            notice_box.pack()
+            notice_box.config(state=tk.DISABLED)
 
         parent.attributes("-topmost", True)
         parent.attributes("-topmost", False)
-        # 本日の日付を取得 as YYYY-MM-DD
-        parent.today_int = datetime.today()
-        parent.today_str = parent.today_int.strftime('%Y-%m-%d')
-        # 前日の日付を取得 as YYYY-MM-DD
-        yesterday_int = parent.today_int - timedelta(days=1)
-        parent.yesterday_str = yesterday_int.strftime('%Y-%m-%d') 
+
         #発注開始の確認
         current_time = datetime.now().time()
         if current_time >= datetime.strptime("06:00", "%H:%M").time() and current_time <= datetime.strptime("23:55", "%H:%M").time():
