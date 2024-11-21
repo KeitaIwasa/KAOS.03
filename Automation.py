@@ -113,6 +113,16 @@ class AutomationHandler:
         else:
             return False
         
+    def get_notices(self, version, today_int):
+        params = {
+            'now': today_int.isoformat(),
+            'version': version}
+        response = self.call_google_script('getNotice', params)
+        if 'error' in response or len(response['notices']) == 0:
+            return False
+        else:
+            return response['notices']
+
     def check_existing_sheet(self, sheet_name):
         params = {
             'shopName': st['SHOP_NAME'],
