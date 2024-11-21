@@ -457,13 +457,12 @@ class AutomationHandler:
                             self.driver.find_element(By.CLASS_NAME, 'ui-icon-closethick').click() # ×ボタンでダイアログを閉じる
                             input_field = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, former_table_id)))
                             input_field.clear()
+
+                            #former_max_order_valueがsetvalueで割り切れない場合があるので、setvalueを足していき、former_max_order_valueを超えないさいだいのsetvalueの倍数にする
                             former_max_order_value = int(self.driver.find_element(By.ID, former_table_id).get_attribute('data-sgosuu')) - 1
-                            former_max_input = 0
-                            while former_max_input < former_max_order_value: #former_max_order_valueがsetvalueで割り切れない場合があるので、setvalueを足していき、former_max_order_valueを超えないさいだいのsetvalueの倍数にする
-                                if former_max_input + set_value > former_max_order_value:
-                                    break
-                                else:
-                                    former_max_input += former_set_value
+                            former_max_input = (former_max_order_value // former_set_value) * former_set_value
+
+                            print(f'商品名：{dict_data[former_input_number]} 発注数MAX超え：{former_max_order_value}→{former_max_input}')
                             input_field.send_keys(former_max_input) #発注数を入力
                         else:
                             error_ls.append(f'{former_input_number}：{dict_data[former_input_number]}（エラー理由：不明）')
