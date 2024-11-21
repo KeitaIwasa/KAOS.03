@@ -90,7 +90,7 @@ if getattr(sys, 'frozen', False):
     ffi = ctypes.cast(p_val.value, ctypes.POINTER(VS_FIXEDFILEINFO)).contents
     file_version = f"{ffi.dwFileVersionMS >> 16}.{ffi.dwFileVersionMS & 0xFFFF}.{ffi.dwFileVersionLS >> 16}.{ffi.dwFileVersionLS & 0xFFFF}"
 else:
-    file_version = "3.7.0.4"
+    file_version = "3.7.0.8"
 
 from Automation import AutomationHandler
 
@@ -161,7 +161,7 @@ class MainApplication(tk.Tk):
         frame = cont(self)
         frame.grid(row=0, column=0, sticky='nsew')
         frame.grid_propagate(False)
-        contact_button = tk.Button(frame, text="ヘルプ", command=self.show_qr)
+        contact_button = tk.Button(frame, text="ヘルプ", cursor="hand2", command=self.show_qr)
         contact_button.place(relx=1.0, rely=1.0, anchor='se', x=-10, y=-10)
         frame.tkraise()
 
@@ -263,7 +263,7 @@ class Text_and_Button_Page(tk.Frame):
         tk.Frame.__init__(self, parent, width=600, height=300)
         self.label1 = tk.Label(self, text="", wraplength=450)
         self.label1.pack(pady=(50,20))
-        self.button1 = tk.Button(self, text="")
+        self.button1 = tk.Button(self, text="", cursor="hand2")
         self.button1.pack()
 
 class Text_and_2Buttons_Page(tk.Frame):
@@ -273,9 +273,9 @@ class Text_and_2Buttons_Page(tk.Frame):
         self.label2.grid(row=0, column=0, columnspan=2, pady=(50,20))
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
-        self.button_L = tk.Button(self, text="既存の発注書", command=lambda:parent.show_frame(Page_6))
+        self.button_L = tk.Button(self, text="既存の発注書", cursor="hand2", command=lambda:parent.show_frame(Page_6))
         self.button_L.grid(row=1, column=0)
-        self.button_R = tk.Button(self, text="新規の発注書", command=lambda:parent.show_frame(Page_4))
+        self.button_R = tk.Button(self, text="新規の発注書", cursor="hand2", command=lambda:parent.show_frame(Page_4))
         self.button_R.grid(row=1, column=1)           
 
 class Progress_Page(tk.Frame):
@@ -292,14 +292,14 @@ class List_Page(tk.Frame):
         tk.Frame.__init__(self, parent, width=400, height=300)
         self.label_l = tk.Label(self, text="", wraplength=450)
         self.label_l.pack(side=tk.TOP, pady=(50,20))
-        self.listbox_frame = tk.Frame(self, width=350, height=200)
+        self.listbox_frame = tk.Frame(self, width=390, height=200)
         self.listbox_frame.pack_propagate(False)
         self.listbox_frame.pack(padx=50)
-        self.button_l = tk.Button(self.listbox_frame, text="")
+        self.button_l = tk.Button(self.listbox_frame, text="", cursor="hand2")
         self.button_l.pack(side=tk.BOTTOM, pady=20)
-        self.scroll_y = tk.Scrollbar(self.listbox_frame)
+        self.scroll_y = tk.Scrollbar(self.listbox_frame, cursor="hand2")
         self.scroll_y.pack(side=tk.RIGHT, fill=tk.Y)
-        self.scroll_x = tk.Scrollbar(self.listbox_frame, orient=tk.HORIZONTAL)
+        self.scroll_x = tk.Scrollbar(self.listbox_frame, orient=tk.HORIZONTAL, cursor="hand2")
         self.scroll_x.pack(side=tk.BOTTOM, fill=tk.X)
         self.listbox = tk.Listbox(self.listbox_frame, yscrollcommand=self.scroll_y.set, xscrollcommand=self.scroll_x.set) 
         self.listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -395,7 +395,7 @@ class Page_0(tk.Frame):
         super().__init__(parent, width=400, height=300)
 
         if st["comp"] == "True":
-            back_button = tk.Button(self, text='戻る', command=lambda: parent.show_frame(Page_1))
+            back_button = tk.Button(self, text='戻る', command=lambda: parent.show_frame(Page_1), cursor="hand2")
             back_button.place(relx=0, rely=0, anchor='nw', x=10, y=10)
 
         df_SHOP_NAME = st['SHOP_NAME']
@@ -433,7 +433,7 @@ class Page_0(tk.Frame):
         self.version_label.grid(row=3, column=0, columnspan=2, pady=10)
 
         # 保存ボタン
-        self.save_button = tk.Button(self.sub_frame, text="保存", command=lambda:self.save_settings(parent))
+        self.save_button = tk.Button(self.sub_frame, text="保存", cursor="hand2", command=lambda:self.save_settings(parent))
         self.save_button.grid(row=4, column=0, columnspan=2, pady=10)
 
     def save_settings(self, parent):
@@ -468,14 +468,14 @@ class Page_1(Text_and_Button_Page):
         super().__init__(parent)
         #設定ボタン
         setting_icon = tk.PhotoImage(file=resource_path('setup/setting_icon.png')).subsample(2,2)
-        setting_button = tk.Button(self, image=setting_icon, compound="top", command=lambda: parent.show_frame(Page_0))
+        setting_button = tk.Button(self, image=setting_icon, compound="top", cursor="hand2", command=lambda: parent.show_frame(Page_0))
         setting_button.image = setting_icon
         setting_button.place(relx=0, rely=0, anchor='nw', x=10, y=10)
         setting_button_tooltip = ToolTip(setting_button, "設定") 
 
         #発注書変更ボタン
         sheet_icon = tk.PhotoImage(file=resource_path('setup/sheet_icon.png')).subsample(2,2)
-        sheet_button = tk.Button(self, image=sheet_icon, compound="top", command=lambda: self.open_original_sheet(parent))
+        sheet_button = tk.Button(self, image=sheet_icon, compound="top", cursor="hand2", command=lambda: self.open_original_sheet(parent))
         sheet_button.image = sheet_icon
         sheet_button.place(relx=0, rely=0, anchor='nw', x=41, y=10)
         sheet_button_tooltip = ToolTip(sheet_button, "発注書[原本]を編集") 
@@ -654,7 +654,7 @@ class Page_6(Text_and_Button_Page): #発注書生成完了&入力確認
         label_qr = tk.Label(self, image=self.qr_img)
         label_qr.pack()
         self.button1.pack_forget()
-        self.button1 = tk.Button(self, text="入力完了", command=lambda:self.confirm_filling(parent))
+        self.button1 = tk.Button(self, text="入力完了", cursor="hand2", command=lambda:self.confirm_filling(parent))
         self.button1.pack()
         parent.nonfood0_ok = False
     
@@ -705,7 +705,7 @@ class Page_7(Progress_Page): #発注数取得・入力
             self.progress.stop()
             self.progress.pack_forget()
             self.label_p.config(text='データの取得に失敗しました。') 
-            self.button2 = tk.Button(self, text="再試行", command=lambda: parent.show_frame(Page_7))     
+            self.button2 = tk.Button(self, text="再試行", cursor="hand2", command=lambda: parent.show_frame(Page_7))     
             self.button2.pack()
             return
         
