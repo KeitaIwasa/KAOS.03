@@ -500,7 +500,7 @@ class Page_1(Text_and_Button_Page):
             notice_frame.pack(before=self.button1, pady=(0, 25))
             notice_title = tk.Label(notice_frame, text="お知らせ")
             notice_title.pack(anchor='w')
-            notice_box = tk.Text(notice_frame, width=48, height=4.5, relief=tk.FLAT)
+            notice_box = tk.Text(notice_frame, width=48, height=4.5, relief=tk.FLAT, font=("Yu Gothic UI", 10))
             for notice in notice_list:
                 notice_box.insert(tk.END, f"{notice}\n")
             notice_box.pack()
