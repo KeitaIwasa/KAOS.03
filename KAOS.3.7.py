@@ -90,7 +90,7 @@ if getattr(sys, 'frozen', False):
     ffi = ctypes.cast(p_val.value, ctypes.POINTER(VS_FIXEDFILEINFO)).contents
     file_version = f"{ffi.dwFileVersionMS >> 16}.{ffi.dwFileVersionMS & 0xFFFF}.{ffi.dwFileVersionLS >> 16}.{ffi.dwFileVersionLS & 0xFFFF}"
 else:
-    file_version = "3.7.0.8"
+    file_version = "3.7.1.0"
 
 from Automation import AutomationHandler
 
