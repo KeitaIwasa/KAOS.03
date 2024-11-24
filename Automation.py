@@ -184,7 +184,8 @@ class AutomationHandler:
         logging.info(f'login_status_code(download_csv): {login_status_code}')
         if login_status_code != "200":
             return login_status_code # ログインエラー(E0007:IDorパスワード誤り)
-        self.csv_path = f'{self.download_folder_path()}/{today_str_csv}_発注.CSV'
+        download_folder = self.download_folder_path()
+        self.csv_path = os.path.join(download_folder, f'{today_str_csv}_発注.CSV')
         try:
             if not os.path.exists(self.csv_path): 
                 # 左メニューの発注照会をクリック
@@ -268,18 +269,24 @@ class AutomationHandler:
 
         logging.info(f"next_day_str: {next_day_str}")
         try:
-            df = pd.read_csv(self.csv_path)
+            with open(self.csv_path, 'r', encoding='utf-8') as file:
+                df = pd.read_csv(file)
             logging.info(df)
         except FileNotFoundError:
             logging.error(f"Error: {self.csv_path} が見つかりませんでした。")
             return "E0006"
         # 納品予定日が翌日のデータをフィルタリング
         filtered_df = df[(df['納品予定日'] == next_day_str) | (df['納品日'] == next_day_str)] # 納品予定日に
+        logging.info('filtered data:')
         logging.info(filtered_df)
 
+        self.filtered_csv_path = self.csv_path.replace('.CSV', '_filtered.CSV')
+
         # CSVファイルに上書き保存
-        filtered_df.to_csv(self.csv_path, index=False, encoding='utf-8-sig')
-        logging.info(f"{self.csv_path} にフィルタリング結果を上書き保存しました。")
+        logging.info(f"{self.filtered_csv_path} にフィルタリング結果を上書き保存します。")
+        with open(self.filtered_csv_path, 'w', encoding='utf-8-sig') as file:
+            filtered_df.to_csv(file, index=False)
+        logging.info(f"{self.filtered_csv_path} にフィルタリング結果を上書き保存しました。")
 
         self.driver.close()
         self.driver.quit() 
@@ -301,7 +308,7 @@ class AutomationHandler:
         raise Exception("All retry attempts failed")
            
     def generate_form(self, delivery_date_int, today_str):
-        with open(self.csv_path, 'r', encoding='utf-8') as file:
+        with open(self.filtered_csv_path, 'r', encoding='utf-8') as file:
             csv_data = file.read()
 
         params = {
