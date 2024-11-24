@@ -204,8 +204,10 @@ class MainApplication(tk.Tk):
                     os.remove(log_file)
                 except Exception as e:
                     logging.error(f"ログファイルの削除に失敗しました: {e}")
-            if os.path.exists(f'{self.handler.download_folder_path()}/{self.today_str_csv}_発注.CSV'):
-                os.remove(f'{self.handler.download_folder_path()}/{self.today_str_csv}_発注.CSV')
+            if os.path.exists(os.path.join(self.handler.download_folder_path(), f'{self.today_str_csv}_発注.CSV')):
+                os.remove(os.path.join(self.handler.download_folder_path(), f'{self.today_str_csv}_発注.CSV'))
+            if os.path.exists(os.path.join(self.handler.download_folder_path(), f'{self.today_str_csv}_発注_filtered.CSV')):
+                os.remove(os.path.join(self.handler.download_folder_path(), f'{self.today_str_csv}_発注_filtered.CSV'))
 
     def check_internet(self):
         try:
