@@ -83,27 +83,32 @@ class AutomationHandler:
     def call_google_script(self, function_name, params):
         max_retries = 3
 
-        for attempt in range(max_retries):
-            try:
-                data = {
-                    'function': function_name,
-                    'parameters': params
-                }
-                response = requests.post(self.script_url, data=json.dumps(data), headers={'Content-Type': 'application/json'})
-                if response.status_code == 200:
-                    logging.info(f"Response JSON from GAS: {response.json()}")
-                    return response.json()
-                else:
-                    logging.warning(f"Attempt {attempt + 1} failed: {response.text}")
-                    raise Exception(f"Google Apps Script呼び出しエラー: {response.text}")
-            except Exception as e:
-                if attempt < max_retries - 1:
-                    delay = (2 ** attempt) + random.uniform(0, 1)  # 指数バックオフ＋ランダムジッター
-                    logging.info(f"Retrying in {delay:.2f} seconds...")
-                    time.sleep(delay)
-                else:
-                    logging.error(f"Max attempts reached. Raising exception.")
-                    raise e
+        with requests.Session() as session:  # セッションを使用して接続を再利用
+            for attempt in range(max_retries):
+                try:
+                    response = session.post(
+                        self.script_url,
+                        json={
+                            'function': function_name,
+                            'parameters': params
+                        },
+                        headers={'Content-Type': 'application/json'},
+                        timeout=30  # タイムアウトを設定
+                    )
+                    if response.status_code == 200:
+                        logging.info(f"Response JSON from GAS: {response.json()}")
+                        return response.json()
+                    else:
+                        logging.warning(f"Attempt {attempt + 1} failed: {response.text}")
+                        raise Exception(f"Google Apps Script呼び出しエラー: {response.text}")
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        delay = (2 ** attempt) + random.uniform(0, 1)  # 指数バックオフ＋ランダムジッター
+                        logging.info(f"Retrying in {delay:.2f} seconds...")
+                        time.sleep(delay)
+                    else:
+                        logging.error(f"Max attempts reached. Raising exception.")
+                        raise e
         
     def get_original_sheet(self):
         params = {'shopName': st['SHOP_NAME']}
@@ -140,38 +145,51 @@ class AutomationHandler:
                 
     # EOSログインメソッド
     def login_eos(self, user_id, password):
-        if self.driver is None:
+        try:
+            if self.driver is not None:
+                self.driver.quit()  # 既存のドライバーを確実にクローズ
+                self.driver = None
+
             options = Options()
             options.add_experimental_option('detach', True)
-            self.driver = webdriver.Chrome()
+            self.driver = webdriver.Chrome(options=options)
             self.driver.minimize_window() #誤操作を防ぐためにウィンドウを最小化
-            self.driver.get('https://eos-st.komeda.co.jp/st/') #ログインページにアクセス           
-        # EOSにログイン
-        try:
-            self.driver.get('https://eos-st.komeda.co.jp/st/')
-            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'txtUserId'))).send_keys(user_id) #ユーザーID入力
-            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'txtPassword'))).send_keys(password) #パスワード入力
-            self.driver.find_element(By.ID, 'btnLogin').click() #「ログイン」ボタンクリック    
-        except TimeoutException: # 別ページでEOSが開かれていた場合、TimeoutExceptionとなる
-            self.driver.get('https://eos-st.komeda.co.jp/st/')
-            self.driver.find_element(By.ID, 'btnNext').click() #「開く」ボタンクリック
-            logging.info('TimeoutException')
-        for _ in range(4):
+            
+            # EOSにログイン
             try:
-                WebDriverWait(self.driver, 2).until(EC.url_to_be('https://eos-st.komeda.co.jp/st/osirase'))
-                break
-            except TimeoutException:
-                if len(self.driver.find_elements(By.XPATH, value="//div[contains(text(), 'ユーザーまたはパスワードが一致しませんでした')]"))>0 :
-                    logging.warning('入力エラーダダイアログdetected')
-                    return "E0007" # ログインエラー
-        WebDriverWait(self.driver, 1).until(EC.url_to_be('https://eos-st.komeda.co.jp/st/osirase'))
-        logging.info('EOSログイン成功')
-        # お知らせが表示される場合は✕ボタン
-        while len(self.driver.find_elements(By.XPATH, value="//button[@title='Close']"))>0 :
-            self.driver.find_element(By.XPATH, value="//button[@title='Close']").click()
-            time.sleep(0.05)
+                self.driver.get('https://eos-st.komeda.co.jp/st/')
+                WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'txtUserId'))).send_keys(user_id) #ユーザーID入力
+                WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, 'txtPassword'))).send_keys(password) #パスワード入力
+                self.driver.find_element(By.ID, 'btnLogin').click() #「ログイン」ボタンクリック    
+            except TimeoutException: # 別ページでEOSが開かれていた場合、TimeoutExceptionとなる
+                self.driver.get('https://eos-st.komeda.co.jp/st/')
+                self.driver.find_element(By.ID, 'btnNext').click() #「開く」ボタンクリック
+                logging.info('TimeoutException')        
+            for _ in range(4):
+                try:
+                    WebDriverWait(self.driver, 2).until(EC.url_to_be('https://eos-st.komeda.co.jp/st/osirase'))
+                    break
+                except TimeoutException:
+                    if len(self.driver.find_elements(By.XPATH, value="//div[contains(text(), 'ユーザーまたはパスワードが一致しませんでした')]"))>0 :
+                        logging.warning('入力エラーダダイアログdetected')
+                        return "E0007" # ログインエラー
+            # ログイン成功の確認
+            WebDriverWait(self.driver, 1).until(EC.url_to_be('https://eos-st.komeda.co.jp/st/osirase'))
+            logging.info('EOSログイン成功')
+            
+            # お知らせが表示される場合は✕ボタン
+            while len(self.driver.find_elements(By.XPATH, value="//button[@title='Close']"))>0 :
+                self.driver.find_element(By.XPATH, value="//button[@title='Close']").click()
+                time.sleep(0.05)
 
-        return "200" # OK
+            return "200" # OK
+            
+        except Exception as e:
+            logging.error(f"Login error: {str(e)}")
+            if self.driver:
+                self.driver.quit()
+                self.driver = None
+            return "E0007"  # ログインエラー
             
     def download_folder_path(self):
         sub_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders'
