@@ -83,27 +83,32 @@ class AutomationHandler:
     def call_google_script(self, function_name, params):
         max_retries = 3
 
-        for attempt in range(max_retries):
-            try:
-                data = {
-                    'function': function_name,
-                    'parameters': params
-                }
-                response = requests.post(self.script_url, data=json.dumps(data), headers={'Content-Type': 'application/json'})
-                if response.status_code == 200:
-                    logging.info(f"Response JSON from GAS: {response.json()}")
-                    return response.json()
-                else:
-                    logging.warning(f"Attempt {attempt + 1} failed: {response.text}")
-                    raise Exception(f"Google Apps Script呼び出しエラー: {response.text}")
-            except Exception as e:
-                if attempt < max_retries - 1:
-                    delay = (2 ** attempt) + random.uniform(0, 1)  # 指数バックオフ＋ランダムジッター
-                    logging.info(f"Retrying in {delay:.2f} seconds...")
-                    time.sleep(delay)
-                else:
-                    logging.error(f"Max attempts reached. Raising exception.")
-                    raise e
+        with requests.Session() as session:  # セッションを使用して接続を再利用
+            for attempt in range(max_retries):
+                try:
+                    response = session.post(
+                        self.script_url,
+                        json={
+                            'function': function_name,
+                            'parameters': params
+                        },
+                        headers={'Content-Type': 'application/json'},
+                        timeout=30  # タイムアウトを設定
+                    )
+                    if response.status_code == 200:
+                        logging.info(f"Response JSON from GAS: {response.json()}")
+                        return response.json()
+                    else:
+                        logging.warning(f"Attempt {attempt + 1} failed: {response.text}")
+                        raise Exception(f"Google Apps Script呼び出しエラー: {response.text}")
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        delay = (2 ** attempt) + random.uniform(0, 1)  # 指数バックオフ＋ランダムジッター
+                        logging.info(f"Retrying in {delay:.2f} seconds...")
+                        time.sleep(delay)
+                    else:
+                        logging.error(f"Max attempts reached. Raising exception.")
+                        raise e
         
     def get_original_sheet(self):
         params = {'shopName': st['SHOP_NAME']}
