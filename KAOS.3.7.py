@@ -144,7 +144,7 @@ def handle_exception(exc, message=False):
         logging.error(f"Failed to upload error log: {e}")
         
     if not message:
-        messagebox.showerror("Error", "予期せぬエラーが発生しました。\nアプリを再起動してください。\n問題が解決しない場合は「ヘルプ」から担当者に連絡してください。")
+        messagebox.showerror("Error", "予期せぬエラーが発生しました。以下の対処を試してください。\n1. アプリを再起動\n2. パソコンを再起動\n問題が解決しない場合は「ヘルプ」から公式サポートに連絡してください。")
     else:
         messagebox.showerror("Error", message)
 
@@ -580,7 +580,7 @@ class Page_OS(Progress_Page):
                     webbrowser.open(original_sheet_url)
             parent.show_frame(Page_1)
         except Exception as e:
-            handle_exception(e, message="発注書の原本が見つかりません。「ヘルプ」から担当者に連絡してください。")
+            handle_exception(e, message="発注書の原本が見つかりません。「ヘルプ」から公式サポートに連絡してください。")
 
 class Page_2(Text_and_Button_Page):
     def __init__(self, parent):
